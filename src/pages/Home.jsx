@@ -7,6 +7,8 @@ const imgs = allItems.filter((item) => item.type === 'image')
 
 export default function Home() {
   const navigate = useNavigate()
+  const firstName = Array.from(site.first)
+  const lastName = Array.from(site.last)
   const orbs = useRef([])
   const orbCount =
     typeof window !== 'undefined' && window.matchMedia('(hover: none) and (pointer: coarse)').matches
@@ -168,7 +170,30 @@ export default function Home() {
       </div>
       <div className="home-intro">
         <p className="home-kicker">Selected work <i>—</i> Personal archive</p>
-        <h1><span>{site.first}</span><span className="home-name-last">{site.last}</span></h1>
+        <h1 aria-label={`${site.first} ${site.last}`}>
+          <span aria-hidden="true">
+            {firstName.map((letter, index) => (
+              <span
+                className="home-title-letter"
+                key={`${letter}-${index}`}
+                style={{ '--letter-index': index }}
+              >
+                {letter}
+              </span>
+            ))}
+          </span>
+          <span className="home-name-last" aria-hidden="true">
+            {lastName.map((letter, index) => (
+              <span
+                className="home-title-letter"
+                key={`${letter}-${index}`}
+                style={{ '--letter-index': firstName.length + index }}
+              >
+                {letter}
+              </span>
+            ))}
+          </span>
+        </h1>
       </div>
       <Link className="enter" to="/archive" data-cursor="Enter">
         Enter archive <i aria-hidden="true">↓</i>

@@ -93,9 +93,15 @@ nav .ul { position: absolute; left: 0; right: 0; bottom: 0; height: 1.5px; backg
 .home-intro { position: relative; z-index: 20; padding: 24px; text-align: center; pointer-events: none; }
 .home-kicker { margin: 0 0 18px; color: var(--ink); font-size: 11px; letter-spacing: 0.17em; text-transform: uppercase; }
 .home-kicker i { padding: 0 7px; color: var(--mute); font-style: normal; }
-.home-intro h1 { display: flex; align-items: baseline; justify-content: center; gap: 0.2em; margin: 0; font-family: var(--display); font-size: clamp(60px, 12vw, 168px); font-weight: 800; line-height: 0.96; letter-spacing: -0.035em; text-shadow: 0 8px 38px rgba(0, 0, 0, 0.45); }
+.home-intro h1 { display: flex; align-items: baseline; justify-content: center; gap: 0.2em; margin: 0; font-family: var(--display); font-size: clamp(60px, 12vw, 168px); font-weight: 800; line-height: 0.96; letter-spacing: -0.035em; text-shadow: 0 8px 38px rgba(0, 0, 0, 0.45); pointer-events: auto; }
 .home-intro h1 > span { white-space: nowrap; }
-.home-name-last { color: transparent; -webkit-text-stroke: 1px var(--ink); }
+.home-title-letter { display: inline-block; transition: transform 0.4s var(--ease), color 0.4s var(--ease), -webkit-text-stroke-color 0.4s var(--ease); }
+.home-name-last .home-title-letter { color: transparent; -webkit-text-stroke: 1px var(--ink); }
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .home-intro h1:hover .home-title-letter { transform: translateY(-0.16em) rotate(3deg); transition-delay: calc(var(--letter-index) * 35ms); }
+  .home-intro h1:hover .home-name-last .home-title-letter { color: var(--ink); -webkit-text-stroke-color: transparent; }
+  .home-intro h1:not(:hover) .home-title-letter { transition-delay: 0ms; }
+}
 .enter { position: absolute; z-index: 30; left: 50%; bottom: calc(env(safe-area-inset-bottom, 0px) + 28px); display: flex; gap: 10px; align-items: center; transform: translateX(-50%); font-size: 13px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--mute); white-space: nowrap; transition: color 0.2s; }
 .enter:hover { color: var(--ink); }
 .enter i { font-style: normal; transition: transform 0.25s var(--ease); }
@@ -124,8 +130,7 @@ nav .ul { position: absolute; left: 0; right: 0; bottom: 0; height: 1.5px; backg
 .stage.drag { cursor: grabbing; }
 .world { position: absolute; inset: 0; }
 .tile { position: absolute; left: 0; top: 0; transition: opacity 0.3s; }
-.tile.hero-arrive { will-change: transform, opacity; transition: transform 0.55s cubic-bezier(0.2, 0.7, 0.2, 1), opacity 0.55s cubic-bezier(0.2, 0.7, 0.2, 1); }
-.tile .in { display: block; width: 100%; height: 100%; border-radius: 3px; overflow: hidden; background: #17171a; transition: transform 0.35s var(--ease), box-shadow 0.35s; }
+.tile .in { display: block; width: 100%; height: 100%; border-radius: 3px; overflow: hidden; background: #17171a; transition: transform 0.35s var(--ease), box-shadow 0.35s, opacity 0.5s ease-out; }
 .tile[data-hero-transition-target] .in { opacity: 0; }
 .tile .in img { width: 100%; height: 100%; object-fit: cover; user-select: none; -webkit-user-drag: none; filter: grayscale(1) contrast(0.95); transition: filter 0.4s; }
 .tile:hover, .tile:focus-visible { z-index: 5; }

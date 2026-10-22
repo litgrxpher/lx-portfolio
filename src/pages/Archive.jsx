@@ -134,79 +134,123 @@ export default function Archive() {
 
   useEffect(() => {
     if (!heroImages.length) return
+    let cancelled = false
+    let frame = 0
     const overlays = []
     const animations = []
-    const targets = []
-    heroImages.forEach((heroImage) => {
-      const target = Array.from(document.querySelectorAll('[data-item-id]')).find(
-        (el) => el.dataset.itemId === heroImage.id
-      )
-      if (!target) return
 
-      const targetBox = target.getBoundingClientRect()
-      const image = document.createElement('img')
-      image.src = heroImage.src
-      image.alt = ''
-      image.draggable = false
-      Object.assign(image.style, {
-        display: 'block',
-        width: '100%',
-        height: '100%',
-        objectFit: 'cover',
-        filter: 'grayscale(1) brightness(0.88)',
-      })
-      const overlay = document.createElement('div')
-      overlay.dataset.heroImageId = heroImage.id
-      Object.assign(overlay.style, {
-        position: 'fixed',
-        left: `${heroImage.x}px`,
-        top: `${heroImage.y}px`,
-        width: `${heroImage.width}px`,
-        height: `${heroImage.height}px`,
-        transformOrigin: 'top left',
-        overflow: 'hidden',
-        borderRadius: '4px',
-        pointerEvents: 'none',
-        zIndex: '45',
-        willChange: 'transform',
-      })
-      overlay.append(image)
-      document.body.append(overlay)
-      target.dataset.heroTransitionTarget = 'true'
-      targets.push(target)
-      overlays.push(overlay)
-      const scaleX = targetBox.width / heroImage.width
-      const scaleY = targetBox.height / heroImage.height
-      animations.push(
-        overlay.animate(
-          [
-            { transform: 'translate3d(0, 0, 0) scale(1)', opacity: 1 },
-            {
-              transform: `translate3d(${targetBox.x - heroImage.x}px, ${targetBox.y - heroImage.y}px, 0) scale(${scaleX}, ${scaleY})`,
-              opacity: 1,
-            },
-          ],
-          { duration: 1150, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'forwards' }
+    const prepareTransition = async () => {
+      const entries = heroImages.flatMap((heroImage) => {
+        const target = Array.from(document.querySelectorAll('[data-item-id]')).find(
+          (el) => el.dataset.itemId === heroImage.id
         )
-      )
-    })
-    if (!animations.length) {
-      setHeroTransitionComplete(true)
-      return
-    }
-    let finished = 0
-    animations.forEach((animation, index) => {
-      animation.onfinish = () => {
-        overlays[index].remove()
-        targets[index].removeAttribute('data-hero-transition-target')
-        finished += 1
-        if (finished === animations.length) setHeroTransitionComplete(true)
+        const targetImage = target?.querySelector('img')
+        if (!target || !targetImage) return []
+
+        const image = document.createElement('img')
+        image.src = heroImage.src
+        image.alt = ''
+        image.draggable = false
+        Object.assign(image.style, {
+          display: 'block',
+          width: '100%',
+          height: '100%',
+          objectFit: 'cover',
+          filter: 'grayscale(1) brightness(0.88)',
+        })
+        return [{ heroImage, target, targetImage, image }]
+      })
+
+      if (!entries.length) {
+        setHeroTransitionComplete(true)
+        return
       }
-    })
+
+      try {
+        await Promise.all(
+          entries.flatMap(({ image, targetImage }) => [image.decode(), targetImage.decode()])
+        )
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Could not decode images for the hero-to-archive transition.', error)
+          setHeroTransitionComplete(true)
+        }
+        return
+      }
+      if (cancelled) return
+
+      entries.forEach(({ heroImage, target, image }) => {
+        const targetBox = target.getBoundingClientRect()
+        const overlay = document.createElement('div')
+        overlay.dataset.heroImageId = heroImage.id
+        Object.assign(overlay.style, {
+          position: 'fixed',
+          left: `${heroImage.x}px`,
+          top: `${heroImage.y}px`,
+          width: `${heroImage.width}px`,
+          height: `${heroImage.height}px`,
+          transformOrigin: 'top left',
+          overflow: 'hidden',
+          borderRadius: '4px',
+          pointerEvents: 'none',
+          zIndex: '45',
+          willChange: 'transform',
+        })
+        overlay.append(image)
+        document.body.append(overlay)
+        overlays.push(overlay)
+
+        const scaleX = targetBox.width / heroImage.width
+        const scaleY = targetBox.height / heroImage.height
+        animations.push(
+          overlay.animate(
+            [
+              { transform: 'translate3d(0, 0, 0) scale(1)', opacity: 1 },
+              {
+                transform: `translate3d(${targetBox.x - heroImage.x}px, ${targetBox.y - heroImage.y}px, 0) scale(${scaleX}, ${scaleY})`,
+                opacity: 1,
+              },
+            ],
+            { duration: 1350, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'forwards' }
+          )
+        )
+      })
+
+      frame = requestAnimationFrame(() => {
+        frame = requestAnimationFrame(() => {
+          if (cancelled) return
+          let finished = 0
+          animations.forEach((animation, index) => {
+            animation.onfinish = () => {
+              finished += 1
+              if (finished !== animations.length) return
+
+              setHeroTransitionComplete(true)
+              frame = requestAnimationFrame(() => {
+                frame = requestAnimationFrame(() => {
+                  if (cancelled) return
+                  overlays.forEach((overlay) => {
+                    const fade = overlay.animate(
+                      [{ opacity: 1 }, { opacity: 0 }],
+                      { duration: 500, easing: 'ease-out', fill: 'forwards' }
+                    )
+                    animations.push(fade)
+                    fade.onfinish = () => overlay.remove()
+                  })
+                })
+              })
+            }
+          })
+        })
+      })
+    }
+
+    prepareTransition()
     return () => {
+      cancelled = true
+      cancelAnimationFrame(frame)
       animations.forEach((animation) => animation.cancel())
       overlays.forEach((overlay) => overlay.remove())
-      targets.forEach((target) => target.removeAttribute('data-hero-transition-target'))
     }
   }, [heroImages])
 
@@ -247,15 +291,7 @@ export default function Archive() {
       for (const c of cells) {
         const el = tiles.current[c.k]
         if (!el) continue
-        const isHeroImage = heroImageIds.has(archiveItems[c.i].id)
-        const placement = getCellPlacement(
-          c,
-          layout,
-          p,
-          vw,
-          vh,
-          isHeroImage && !heroTransitionComplete
-        )
+        const placement = getCellPlacement(c, layout, p, vw, vh)
         Object.assign(el.style, placement)
       }
     }
@@ -403,7 +439,7 @@ export default function Archive() {
                 alt=""
                 draggable={false}
                 decoding="async"
-                loading="lazy"
+                loading={shareImage ? 'eager' : 'lazy'}
               />
             )
             return (
@@ -412,8 +448,9 @@ export default function Archive() {
                 ref={(el) => {
                   tiles.current[c.k] = el
                 }}
-                className={`tile${shareImage && heroTransitionComplete ? ' hero-arrive' : ''}`}
+                className="tile"
                 data-item-id={shareImage ? it.id : undefined}
+                data-hero-transition-target={shareImage && !heroTransitionComplete ? 'true' : undefined}
                 style={{
                   width: layout.cw,
                   height: layout.ch,
@@ -422,8 +459,7 @@ export default function Archive() {
                     layout,
                     pos.current,
                     window.innerWidth,
-                    window.innerHeight,
-                    shareImage && !heroTransitionComplete
+                    window.innerHeight
                   ),
                 }}
                 data-cursor="Open"
@@ -436,11 +472,6 @@ export default function Archive() {
                 onBlur={() => setCap('')}
                 onClick={() => {
                   if (moved.current < 6) navigate(`/series/${it.series.slug}/${it.index + 1}`)
-                }}
-                onTransitionEnd={(event) => {
-                  if (event.target === event.currentTarget && event.propertyName === 'transform') {
-                    event.currentTarget.classList.remove('hero-arrive')
-                  }
                 }}
               >
                 {it.type === 'title' ? (
