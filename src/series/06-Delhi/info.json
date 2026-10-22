@@ -3,7 +3,8 @@
   "location": "Delhi, India",
   "date": "2025",
   "category": "City Walk",
-  "description": "A photographic walk through Delhi, capturing its streets, architecture, and everyday moments along the way.",
+  "cameras": ["iPhone SE (2nd generation)"],
+  "description": "Delhi in passing—old stone, restless streets, and small moments between destinations.",
   "cover": "IMG_9602.JPG",
   "details": {}
 }

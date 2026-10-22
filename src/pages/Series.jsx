@@ -265,6 +265,7 @@ export default function Series() {
     ['Location', s.location],
     ['Date', s.date],
     ['Type', s.category],
+    ['Camera', s.cameras.join(', ')],
     ['Frames', frames],
     ...Object.entries(s.details),
   ].filter(([, v]) => v)
@@ -276,7 +277,7 @@ export default function Series() {
   return (
     <article className="view sr">
       <div className="sr-top">
-        <Link to="/archive" className="back-link" data-cursor="Back">← Back to archive</Link>
+        <Link to="/series" className="back-link" data-cursor="Back">← Back to series</Link>
         <span>Series {pad(si + 1)} / {pad(series.length)}</span>
       </div>
 

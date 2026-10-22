@@ -56,6 +56,7 @@ export const series = folders.map((folder, si) => {
     location: info.location || '',
     date: info.date || '',
     category: info.category || '',
+    cameras: info.cameras || ['iPhone 16'],
     description: info.description || '',
     cover: info.cover || '',
     details: info.details || {},

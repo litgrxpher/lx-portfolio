@@ -202,7 +202,6 @@ dl.meta dd a { border-bottom: 1px solid var(--ink); margin-right: 10px; }
 .about-widget-arrow { color: var(--mute); font-size: 13px; }
 .about-stat-widget { display: flex; flex-direction: column; justify-content: space-between; padding: 10px; }
 .about-stat-widget b { font-family: var(--display); font-size: 23px; font-weight: 600; line-height: 1; }
-
 /* ===== Series index ===== */
 .series-index-heading { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-bottom: clamp(32px, 5vw, 64px); }
 .series-index-heading .vtitle { font-size: clamp(56px, 10vw, 144px); line-height: 0.9; }
