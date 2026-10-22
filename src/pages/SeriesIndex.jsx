@@ -1,6 +1,10 @@
 import { Link } from 'react-router-dom'
 import { series } from '../data/series'
 
+const latestFirst = [...series].sort(
+  (a, b) => (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0)
+)
+
 export default function SeriesIndex() {
   return (
     <article className="view series-index">
@@ -11,7 +15,7 @@ export default function SeriesIndex() {
       </div>
 
       <section className="series-grid" aria-label="Photo series">
-        {series.map((item, index) => {
+        {latestFirst.map((item, index) => {
           const cover =
             item.items.find((media) => media.file === item.cover && media.type === 'image') ||
             item.items.find((media) => media.type === 'image')
