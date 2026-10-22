@@ -8,6 +8,7 @@ import Home from './pages/Home'
 import Archive from './pages/Archive'
 import About from './pages/About'
 import Series from './pages/Series'
+import SeriesIndex from './pages/SeriesIndex'
 
 function Page({ children }) {
   return (
@@ -49,6 +50,7 @@ export default function App() {
         <Routes location={location} key={pathname}>
           <Route path="/" element={<Page><Home /></Page>} />
           <Route path="/archive" element={<Page><Archive /></Page>} />
+          <Route path="/series" element={<Page><SeriesIndex /></Page>} />
           <Route path="/series/:slug/:n?" element={<Page><Series /></Page>} />
           <Route path="/work/*" element={<Navigate to="/archive" replace />} />
           <Route path="/about" element={<Page><About /></Page>} />

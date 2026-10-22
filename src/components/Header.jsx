@@ -14,30 +14,25 @@ function NavItem({ to, active, children }) {
 export default function Header() {
   const { pathname } = useLocation()
   const onHome = pathname === '/'
-  const inArchive = pathname === '/archive' || pathname.startsWith('/series')
+  const inArchive = pathname === '/archive'
+  const inSeries = pathname === '/series' || pathname.startsWith('/series/')
   const inAbout = pathname === '/about'
 
   return (
     <header className={'top' + (onHome ? ' on-home' : '')}>
       <Link to="/" className="brand" aria-label={`${site.name}, home`}>
-        <b>{site.name}</b>
+        <b className="brand-mark">CS<span className="brand-dot">.</span></b>
       </Link>
       <nav aria-label="Main">
         <NavItem to="/archive" active={inArchive}>
           Archive
         </NavItem>
+        <NavItem to="/series" active={inSeries}>
+          Series
+        </NavItem>
         <NavItem to="/about" active={inAbout}>
           About
         </NavItem>
-        <a className="ext" href={site.behance} target="_blank" rel="noopener noreferrer">
-          Behance ↗
-        </a>
-        <a className="ext2" href={site.instagram} target="_blank" rel="noopener noreferrer">
-          Instagram ↗
-        </a>
-        <a className="ext2" href={site.linkedin} target="_blank" rel="noopener noreferrer">
-          LinkedIn ↗
-        </a>
       </nav>
     </header>
   )

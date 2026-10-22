@@ -19,6 +19,7 @@ export default function SayHello() {
         <span className="foot-links">
           <a href={site.behance} target="_blank" rel="noopener noreferrer">Behance ↗</a>
           <a href={site.instagram} target="_blank" rel="noopener noreferrer">Instagram ↗</a>
+          <a href={site.youtube} target="_blank" rel="noopener noreferrer">YouTube ↗</a>
           <a href={site.linkedin} target="_blank" rel="noopener noreferrer">LinkedIn ↗</a>
           <a href={site.github} target="_blank" rel="noopener noreferrer">GitHub ↗</a>
         </span>

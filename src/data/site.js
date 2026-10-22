@@ -7,6 +7,7 @@ export const site = {
   email: 'adharshcs21@gmail.com',
   behance: 'https://www.behance.net/adharshcs',
   instagram: 'https://www.instagram.com/litgrxpher/',
+  youtube: 'https://www.youtube.com/@litgrxpher',
   linkedin: 'https://www.linkedin.com/in/csadharsh/',
   github: 'https://github.com/litgrxpher',
   about:

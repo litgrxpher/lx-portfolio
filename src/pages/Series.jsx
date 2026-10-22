@@ -11,7 +11,6 @@ import {
 } from 'framer-motion'
 import { series } from '../data/series'
 import { Words, FadeUp } from '../components/Reveal'
-import SayHello from '../components/SayHello'
 
 const ease = [0.2, 0.7, 0.2, 1]
 const mod = (a, n) => ((a % n) + n) % n
@@ -348,8 +347,6 @@ export default function Series() {
           </span>
         </Link>
       )}
-
-      <SayHello />
     </article>
   )
 }

@@ -4,7 +4,6 @@ import { motion, useScroll, useTransform } from 'framer-motion'
 import { projects } from '../data/projects'
 import { site } from '../data/site'
 import { Words, FadeUp } from '../components/Reveal'
-import SayHello from '../components/SayHello'
 
 const ease = [0.2, 0.7, 0.2, 1]
 
@@ -71,8 +70,6 @@ export default function Project() {
           <i>→</i>
         </span>
       </Link>
-
-      <SayHello />
     </article>
   )
 }

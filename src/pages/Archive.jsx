@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { archiveItems, series } from '../data/series'
+import { archiveItems } from '../data/series'
 
 const N = archiveItems.length
 const mod = (a, n) => ((a % n) + n) % n
@@ -51,15 +51,12 @@ function computeLayout(vw, vh, order) {
   return { cw, ch, bw: cols * sx + sx * 0.3, bh: rows * sy, cells }
 }
 
-const filters = ['All', ...new Set(series.map((s) => s.title))]
-
 export default function Archive() {
   const navigate = useNavigate()
   const orderRef = useRef([])
   const [layout, setLayout] = useState(() =>
     N ? computeLayout(window.innerWidth, window.innerHeight, orderRef.current) : { cells: [] }
   )
-  const [filter, setFilter] = useState('All')
   const stageRef = useRef(null)
   const capRef = useRef(null)
   const tiles = useRef([])
@@ -144,6 +141,12 @@ export default function Archive() {
       dirty = true
       schedule()
     }
+    const onArchivePan = (event) => {
+      const { dx, dy } = event.detail
+      vx = dx
+      vy = dy
+      pan(dx, dy)
+    }
 
     const onDown = (e) => {
       if (e.pointerType === 'mouse' && e.button !== 0) return
@@ -192,6 +195,7 @@ export default function Archive() {
     }
 
     stage.addEventListener('pointerdown', onDown)
+    stage.addEventListener('archive-pan', onArchivePan)
     window.addEventListener('pointermove', onMove)
     window.addEventListener('pointerup', onUp)
     window.addEventListener('pointercancel', onUp)
@@ -202,6 +206,7 @@ export default function Archive() {
     return () => {
       cancelAnimationFrame(raf)
       stage.removeEventListener('pointerdown', onDown)
+      stage.removeEventListener('archive-pan', onArchivePan)
       window.removeEventListener('pointermove', onMove)
       window.removeEventListener('pointerup', onUp)
       window.removeEventListener('pointercancel', onUp)
@@ -213,10 +218,9 @@ export default function Archive() {
   const setCap = (text) => {
     if (capRef.current) capRef.current.textContent = text
   }
-  const isDim = (it) =>
-    filter !== 'All' && it.series.title !== filter
-  const count = archiveItems.filter((it) => !isDim(it)).length
-
+  const panArchive = (dx, dy) => {
+    stageRef.current?.dispatchEvent(new CustomEvent('archive-pan', { detail: { dx, dy } }))
+  }
   if (!N) {
     return (
       <section className="archive empty">
@@ -251,7 +255,7 @@ export default function Archive() {
                 ref={(el) => {
                   tiles.current[c.k] = el
                 }}
-                className={'tile' + (isDim(it) ? ' dim' : '')}
+                className="tile"
                 style={{ width: layout.cw, height: layout.ch }}
                 data-cursor="Open"
                 aria-label={label}
@@ -285,19 +289,21 @@ export default function Archive() {
       </div>
       <div className="vig" />
       <div className="bottom">
-        <div className="hint">Scroll or drag to shift</div>
+        <div className="archive-nav">
+          <div className="archive-pad" role="group" aria-label="Move around the archive">
+            <button type="button" className="pad-up" aria-label="Move archive up" onClick={() => panArchive(0, 120)}>↑</button>
+            <button type="button" className="pad-left" aria-label="Move archive left" onClick={() => panArchive(120, 0)}>←</button>
+            <span className="pad-center" aria-hidden="true"><i /></span>
+            <button type="button" className="pad-right" aria-label="Move archive right" onClick={() => panArchive(-120, 0)}>→</button>
+            <button type="button" className="pad-down" aria-label="Move archive down" onClick={() => panArchive(0, -120)}>↓</button>
+          </div>
+          <span className="hint-copy">Scroll or drag</span>
+        </div>
         <div className="mid">
           <div ref={capRef} className="cap" aria-live="polite" />
-          <div className="filters">
-            {filters.map((f) => (
-              <button key={f} aria-pressed={filter === f} onClick={() => setFilter(f)}>
-                {f}
-              </button>
-            ))}
-          </div>
         </div>
         <div className="count">
-          {count} {count === 1 ? 'item' : 'items'}
+          {N} {N === 1 ? 'item' : 'items'}
         </div>
       </div>
     </section>

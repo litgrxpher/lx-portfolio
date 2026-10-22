@@ -57,6 +57,7 @@ export const series = folders.map((folder, si) => {
     date: info.date || '',
     category: info.category || '',
     description: info.description || '',
+    cover: info.cover || '',
     details: info.details || {},
     link: info.link || site.behance,
     items: [],

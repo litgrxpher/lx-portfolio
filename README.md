@@ -27,6 +27,7 @@ The dev server and production build automatically generate WebP versions of phot
   "date": "August 2026",
   "category": "Travel",
   "description": "A few lines about the place and the trip.",
+  "cover": "01.jpg",
   "details": { "Camera": "iPhone 15 Pro", "Weather": "Mist and light rain" },
   "captions": { "01.jpg": "First light on the tea hills" }
 }
