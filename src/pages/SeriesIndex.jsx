@@ -1,9 +1,33 @@
 import { Link } from 'react-router-dom'
 import { series } from '../data/series'
 
-const latestFirst = [...series].sort(
-  (a, b) => (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0)
-)
+const months = [
+  'january',
+  'february',
+  'march',
+  'april',
+  'may',
+  'june',
+  'july',
+  'august',
+  'september',
+  'october',
+  'november',
+  'december',
+]
+
+function dateRank(value) {
+  const monthYear = value.match(/^([a-z]+)\s+(\d{4})$/i)
+  if (monthYear) {
+    const month = months.indexOf(monthYear[1].toLowerCase())
+    if (month !== -1) return Number(monthYear[2]) * 12 + month
+  }
+
+  const year = value.match(/^(\d{4})$/)
+  return year ? Number(year[1]) * 12 : Number.NEGATIVE_INFINITY
+}
+
+const latestFirst = [...series].sort((a, b) => dateRank(b.date) - dateRank(a.date))
 
 export default function SeriesIndex() {
   return (
