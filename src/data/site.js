@@ -10,5 +10,5 @@ export const site = {
   linkedin: 'https://www.linkedin.com/in/csadharsh/',
   github: 'https://github.com/litgrxpher',
   about:
-    'An electronics engineer who works with data by day and spends the rest of the time designing, editing and shooting.',
+    'I’m an electronics engineer working as a database administrator, where curiosity and a detail-oriented mindset shape how I approach data. Outside of work, I explore photography, video, and design, using visual storytelling to capture places, journeys, and moments worth remembering. Whether I’m working with data or behind a camera, I enjoy finding a clear story in the details.',
 }

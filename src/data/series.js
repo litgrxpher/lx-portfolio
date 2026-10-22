@@ -50,14 +50,17 @@ export const series = folders.map((folder, si) => {
     items: [],
   }
   s.items = groups[folder]
-    .sort((a, b) => a.file.localeCompare(b.file, undefined, { numeric: true }))
+    .sort(
+      (a, b) =>
+        Number(a.type === 'video') - Number(b.type === 'video') ||
+        a.file.localeCompare(b.file, undefined, { numeric: true })
+    )
     .map((it, k) => ({
       id: `${slug}-${k}`,
       file: it.file,
       src: it.src,
       type: it.type,
       index: k,
-      caption: (info.captions && info.captions[it.file]) || '',
       series: s,
     }))
   return s

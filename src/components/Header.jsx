@@ -29,7 +29,7 @@ export default function Header() {
         <NavItem to="/about" active={inAbout}>
           About
         </NavItem>
-        <a href={site.behance} target="_blank" rel="noopener noreferrer">
+        <a className="ext" href={site.behance} target="_blank" rel="noopener noreferrer">
           Behance ↗
         </a>
         <a className="ext2" href={site.instagram} target="_blank" rel="noopener noreferrer">

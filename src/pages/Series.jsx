@@ -18,11 +18,11 @@ const mod = (a, n) => ((a % n) + n) % n
 const pad = (n) => String(n).padStart(2, '0')
 
 const slide = {
-  enter: (d) => ({ x: d * 120, opacity: 0, scale: 1.06, filter: 'grayscale(1)' }),
-  center: { x: 0, opacity: 1, scale: 1, filter: 'grayscale(0)' },
-  exit: (d) => ({ x: d * -120, opacity: 0, scale: 0.96, filter: 'grayscale(1)' }),
+  enter: (d) => ({ x: d * 120, opacity: 0, scale: 1.06 }),
+  center: { x: 0, opacity: 1, scale: 1 },
+  exit: (d) => ({ x: d * -120, opacity: 0, scale: 0.96 }),
 }
-const firstLook = { x: 0, opacity: 0, scale: 1.12, filter: 'grayscale(1)' }
+const firstLook = { x: 0, opacity: 0, scale: 1.12 }
 
 // Natural width / height of every photo and video, so each one is shown in its own shape
 const ratioCache = new Map()
@@ -74,11 +74,11 @@ function Media({ it, className, ...rest }) {
       />
     )
   }
-  return <motion.img className={className} src={it.src} alt={it.caption || it.series.title} draggable={false} {...rest} />
+  return <motion.img className={className} src={it.src} alt={it.series.title} draggable={false} {...rest} />
 }
 
 // The big viewer: cursor-following tilt and glare, slides between frames
-function Viewer({ items, active, dir, go, sound, setSound, ar }) {
+function Viewer({ items, active, dir, go, sound, setSound, ar, viewerRef }) {
   const it = items[active]
   const frameRef = useRef(null)
   const mx = useMotionValue(0.5)
@@ -109,6 +109,7 @@ function Viewer({ items, active, dir, go, sound, setSound, ar }) {
 
   return (
     <div
+      ref={viewerRef}
       className="sr-view"
       style={{ '--ar': ar }}
       onPointerMove={(e) => {
@@ -143,16 +144,17 @@ function Viewer({ items, active, dir, go, sound, setSound, ar }) {
         <button onClick={() => go(1)} aria-label="Next" data-cursor="Next">→</button>
         {it.type === 'video' && (
           <button
-            className="sr-sound"
+            className={'sr-sound' + (sound ? ' is-on' : '')}
             onClick={() => setSound((v) => !v)}
             aria-pressed={sound}
+            aria-label={sound ? 'Turn sound off' : 'Turn sound on'}
             data-cursor={sound ? 'Mute' : 'Sound'}
           >
-            {sound ? 'Sound on' : 'Sound off'}
+            <span className="sr-sound-wave" aria-hidden="true"><i /><i /><i /></span>
+            <span>{sound ? 'Sound on' : 'Sound off'}</span>
           </button>
         )}
       </div>
-      <p className="sr-cap">{it.caption}</p>
     </div>
   )
 }
@@ -199,6 +201,7 @@ export default function Series() {
   const [active, setActive] = useState(startIdx)
   const [dir, setDir] = useState(0)
   const stripRef = useRef(null)
+  const viewerRef = useRef(null)
   const [sound, setSound] = useState(false)
   useRatios(items)
 
@@ -209,8 +212,14 @@ export default function Series() {
   const jump = (k) => {
     setDir(k >= active ? 1 : -1)
     setActive(k)
-    if (window.__lenis) window.__lenis.scrollTo(0, { duration: 1.1 })
-    else window.scrollTo({ top: 0, behavior: 'smooth' })
+    const viewer = viewerRef.current
+    if (!viewer) return
+    if (window.__lenis) {
+      window.__lenis.scrollTo(viewer, { offset: -92, duration: 1.1 })
+    } else {
+      const top = window.scrollY + viewer.getBoundingClientRect().top - 92
+      window.scrollTo({ top, behavior: 'smooth' })
+    }
   }
 
   useEffect(() => {
@@ -227,9 +236,31 @@ export default function Series() {
   useEffect(() => {
     if (!s) return
     window.history.replaceState(window.history.state, '', `/series/${s.slug}/${active + 1}`)
-    const el = stripRef.current && stripRef.current.children[active]
-    if (el && el.scrollIntoView) el.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' })
+    const strip = stripRef.current
+    const el = strip && strip.children[active]
+    if (strip && el) {
+      const stripBounds = strip.getBoundingClientRect()
+      const itemBounds = el.getBoundingClientRect()
+      const left =
+        itemBounds.left -
+        stripBounds.left +
+        strip.scrollLeft -
+        (strip.clientWidth - el.clientWidth) / 2
+      strip.scrollTo({ left, behavior: 'smooth' })
+    }
   }, [active, s])
+
+  useEffect(() => {
+    const strip = stripRef.current
+    if (!strip) return
+    const onWheel = (event) => {
+      event.preventDefault()
+      event.stopPropagation()
+      strip.scrollLeft += event.deltaX || event.deltaY
+    }
+    strip.addEventListener('wheel', onWheel, { passive: false })
+    return () => strip.removeEventListener('wheel', onWheel)
+  }, [])
 
   if (!s || !count) return <Navigate to="/archive" replace />
 
@@ -270,14 +301,19 @@ export default function Series() {
               {rows.map(([k, v]) => (
                 <div key={k}><dt>{k}</dt><dd>{v}</dd></div>
               ))}
-              <div>
-                <dt>More</dt>
-                <dd><a href={s.link} target="_blank" rel="noopener noreferrer">Behance ↗</a></dd>
-              </div>
             </dl>
           </FadeUp>
         </div>
-        <Viewer items={items} active={active} dir={dir} go={go} sound={sound} setSound={setSound} ar={ar} />
+        <Viewer
+          items={items}
+          active={active}
+          dir={dir}
+          go={go}
+          sound={sound}
+          setSound={setSound}
+          ar={ar}
+          viewerRef={viewerRef}
+        />
       </section>
 
       <div className="sr-strip" ref={stripRef}>

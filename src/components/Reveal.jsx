@@ -1,3 +1,4 @@
+import { Fragment } from 'react'
 import { motion } from 'framer-motion'
 
 const ease = [0.2, 0.7, 0.2, 1]
@@ -28,18 +29,20 @@ export function Words({ text, as: Tag = 'span', className = '', delay = 0 }) {
   return (
     <Tag className={className} aria-label={text}>
       {words.map((w, i) => (
-        <span className="w" key={i} aria-hidden="true">
-          <motion.span
-            className="wi"
-            initial={{ y: '108%' }}
-            whileInView={{ y: 0 }}
-            viewport={{ once: true, margin: '0px 0px -8% 0px' }}
-            transition={{ duration: 0.85, ease, delay: delay + i * 0.06 }}
-          >
-            {w}
-          </motion.span>
-          {i < words.length - 1 ? '\u00A0' : ''}
-        </span>
+        <Fragment key={i}>
+          <span className="w" aria-hidden="true">
+            <motion.span
+              className="wi"
+              initial={{ y: '108%' }}
+              whileInView={{ y: 0 }}
+              viewport={{ once: true, margin: '0px 0px -8% 0px' }}
+              transition={{ duration: 0.85, ease, delay: delay + i * 0.06 }}
+            >
+              {w}
+            </motion.span>
+          </span>
+          {i < words.length - 1 ? ' ' : ''}
+        </Fragment>
       ))}
     </Tag>
   )

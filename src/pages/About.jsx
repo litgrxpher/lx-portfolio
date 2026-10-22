@@ -19,9 +19,9 @@ function Float({ p, className, range }) {
 }
 
 export default function About() {
-  const imgs = allItems.filter((i) => i.type === 'image')
-  const n = imgs.length
-  const pick = (i) => imgs[i % n]
+  const aboutImage = allItems.find(
+    (item) => item.file === 'IMG_6884_SnapseedCopy_SnapseedCopy.jpg'
+  )
   const words = ['Design', 'Video', 'Photography', 'Engineering']
 
   return (
@@ -30,14 +30,14 @@ export default function About() {
       <div className="ab">
         <div className="ab-text">
           <h1 className="ab-title">
-            <Words text="Logic by day," />
+            <Words text="Querying data by day," />
             <br />
-            <Words text="pictures by night." delay={0.2} />
+            <Words text="Framing stories by night." delay={0.2} />
           </h1>
           <FadeUp as="p" className="lead" delay={0.3}>{site.about}</FadeUp>
           <FadeUp delay={0.4}>
             <dl className="meta">
-              <div><dt>Work</dt><dd>Design, video, photography</dd></div>
+              <div><dt>Work</dt><dd>Data, Video, Photography</dd></div>
               <div><dt>Portfolio</dt><dd><a href={site.behance} target="_blank" rel="noopener noreferrer">Behance ↗</a></dd></div>
               <div>
                 <dt>Elsewhere</dt>
@@ -49,11 +49,9 @@ export default function About() {
             </dl>
           </FadeUp>
         </div>
-        {n > 0 && (
+        {aboutImage && (
           <div className="ab-art" aria-hidden="true">
-            <Float p={pick(2)} className="a0" range={['6%', '-10%']} />
-            <Float p={pick(8)} className="a1" range={['14%', '-18%']} />
-            <Float p={pick(13)} className="a2" range={['2%', '-6%']} />
+            <Float p={aboutImage} className="about-feature" range={['6%', '-10%']} />
           </div>
         )}
       </div>
@@ -65,6 +63,18 @@ export default function About() {
           ))}
         </div>
       </div>
+
+      <section className="resume" aria-labelledby="resume-title">
+        <div>
+          <p className="resume-label">A little more on paper</p>
+          <h2 id="resume-title" className="resume-title">Resume</h2>
+          <p className="resume-copy">Explore my experience, education, and skills.</p>
+        </div>
+        <div className="resume-actions">
+          <a href="/Resume.pdf" target="_blank" rel="noopener noreferrer">View resume <span aria-hidden="true">↗</span></a>
+          <a href="/Resume.pdf" download="Adharsh-CS-Resume.pdf">Download PDF <span aria-hidden="true">↓</span></a>
+        </div>
+      </section>
 
       <SayHello />
     </article>

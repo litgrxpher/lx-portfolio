@@ -1,9 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { archiveItems as allItems, series } from '../data/series'
+import { archiveItems, series } from '../data/series'
 
-const N = allItems.length
+const N = archiveItems.length
 const mod = (a, n) => ((a % n) + n) % n
 
 function shuffle(a) {
@@ -19,7 +19,7 @@ function shuffle(a) {
 // Each block holds everything once, so nothing is left out and repeats are spread apart.
 function extendOrder(order, total) {
   while (order.length < total) {
-    const block = shuffle(allItems.map((_, i) => i))
+    const block = shuffle(archiveItems.map((_, i) => i))
     if (order.length && block.length > 1 && block[0] === order[order.length - 1]) {
       ;[block[0], block[1]] = [block[1], block[0]]
     }
@@ -43,8 +43,8 @@ function computeLayout(vw, vh, order) {
     cells.push({
       k,
       i: order[k],
-      bx: col * sx + (row % 2) * sx * 0.28 + (((k * 37) % 11) - 5) * 3,
-      by: row * sy + (((k * 53) % 9) - 4) * 3,
+      bx: col * sx,
+      by: row * sy,
       rot: (((k * 29) % 9) - 4) * 0.45,
     })
   }
@@ -215,7 +215,7 @@ export default function Archive() {
   }
   const isDim = (it) =>
     filter !== 'All' && it.series.title !== filter
-  const count = allItems.filter((it) => !isDim(it)).length
+  const count = archiveItems.filter((it) => !isDim(it)).length
 
   if (!N) {
     return (
@@ -243,7 +243,7 @@ export default function Archive() {
           transition={{ duration: 1.1, ease: [0.2, 0.7, 0.2, 1] }}
         >
           {layout.cells.map((c) => {
-            const it = allItems[c.i]
+            const it = archiveItems[c.i]
             const label = `${it.series.title}${it.series.location ? ' · ' + it.series.location : ''}`
             return (
               <button
@@ -269,7 +269,13 @@ export default function Archive() {
                   {it.type === 'title' ? (
                     <span className="ph">{it.series.title}</span>
                   ) : (
-                    <img src={it.src} alt="" draggable={false} decoding="async" />
+                    <img
+                      src={it.src}
+                      alt=""
+                      draggable={false}
+                      decoding="async"
+                      loading="lazy"
+                    />
                   )}
                 </span>
               </button>
