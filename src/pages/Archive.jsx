@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { projects, categories } from '../data/projects'
+import { videos } from '../data/videos'
 
 const N = projects.length
 const mod = (a, n) => ((a % n) + n) % n
@@ -32,6 +33,7 @@ export default function Archive() {
   const navigate = useNavigate()
   const [layout, setLayout] = useState(() => computeLayout(window.innerWidth, window.innerHeight))
   const [filter, setFilter] = useState('All')
+  const [showVideos, setShowVideos] = useState(false)
   const stageRef = useRef(null)
   const capRef = useRef(null)
   const tiles = useRef([])
@@ -53,7 +55,7 @@ export default function Archive() {
 
   useEffect(() => {
     const stage = stageRef.current
-    if (!stage || !N) return
+    if (!stage || !N || showVideos) return
     const { cw, ch, bw, bh, cells } = layout
     let vx = 0,
       vy = 0,
@@ -176,83 +178,117 @@ export default function Archive() {
       stage.removeEventListener('wheel', onWheel)
       window.removeEventListener('keydown', onKey)
     }
-  }, [layout])
+  }, [layout, showVideos])
 
   const setCap = (text) => {
     if (capRef.current) capRef.current.textContent = text
   }
   const count = filter === 'All' ? N : projects.filter((p) => p.category === filter).length
 
-  if (!N) {
-    return (
-      <section className="archive empty">
-        <p>Add photos to <code>src/photos</code> and they will appear here.</p>
-      </section>
-    )
-  }
-
   return (
     <section className="archive" aria-label="Project archive">
-      <div
-        ref={stageRef}
-        className="stage"
-        tabIndex={0}
-        aria-label="Project grid. Drag, scroll or use the arrow keys to move around."
-        data-cursor="Drag"
-      >
-        <motion.div
-          className="world"
-          initial={{ opacity: 0, scale: 1.08 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ duration: 1.1, ease: [0.2, 0.7, 0.2, 1] }}
-        >
-          {layout.cells.map((c) => {
-            const p = projects[c.i]
-            const dim = filter !== 'All' && p.category !== filter
-            const label = `${p.title} · ${p.category}`
-            return (
-              <button
-                key={c.k}
-                ref={(el) => {
-                  tiles.current[c.k] = el
-                }}
-                className={'tile' + (dim ? ' dim' : '')}
-                style={{ width: layout.cw, height: layout.ch }}
-                data-cursor="View"
-                aria-label={label}
-                tabIndex={c.k < N ? 0 : -1}
-                aria-hidden={c.k >= N ? true : undefined}
-                onMouseEnter={() => setCap(label)}
-                onFocus={() => setCap(label)}
-                onMouseLeave={() => setCap('')}
-                onBlur={() => setCap('')}
-                onClick={() => {
-                  if (moved.current < 6) navigate('/work/' + p.slug)
-                }}
-              >
-                <span className="in">
-                  <img src={p.src} alt="" draggable={false} decoding="async" />
-                </span>
-              </button>
-            )
-          })}
-        </motion.div>
-      </div>
-      <div className="vig" />
+      {!showVideos && N > 0 && (
+        <>
+          <div
+            ref={stageRef}
+            className="stage"
+            tabIndex={0}
+            aria-label="Project grid. Drag, scroll or use the arrow keys to move around."
+            data-cursor="Drag"
+          >
+            <motion.div
+              className="world"
+              initial={{ opacity: 0, scale: 1.08 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 1.1, ease: [0.2, 0.7, 0.2, 1] }}
+            >
+              {layout.cells.map((c) => {
+                const p = projects[c.i]
+                const dim = filter !== 'All' && p.category !== filter
+                const label = `${p.title} · ${p.category}`
+                return (
+                  <button
+                    key={c.k}
+                    ref={(el) => {
+                      tiles.current[c.k] = el
+                    }}
+                    className={'tile' + (dim ? ' dim' : '')}
+                    style={{ width: layout.cw, height: layout.ch }}
+                    data-cursor="View"
+                    aria-label={label}
+                    tabIndex={c.k < N ? 0 : -1}
+                    aria-hidden={c.k >= N ? true : undefined}
+                    onMouseEnter={() => setCap(label)}
+                    onFocus={() => setCap(label)}
+                    onMouseLeave={() => setCap('')}
+                    onBlur={() => setCap('')}
+                    onClick={() => {
+                      if (moved.current < 6) navigate('/work/' + p.slug)
+                    }}
+                  >
+                    <span className="in">
+                      <img src={p.src} alt="" draggable={false} decoding="async" />
+                    </span>
+                  </button>
+                )
+              })}
+            </motion.div>
+          </div>
+          <div className="vig" />
+        </>
+      )}
+      {!showVideos && !N && (
+        <div className="archive-empty-note">
+          Add photos to <code>src/photos</code> and they will appear here.
+        </div>
+      )}
+      {showVideos && (
+        <div className="video-gallery" aria-label="Video archive">
+          <div className="video-gallery-inner">
+            <h1>Videos</h1>
+            {videos.length ? (
+              <div className="video-grid">
+                {videos.map((video) => (
+                  <article className="video-card" key={video.src}>
+                    <video src={video.src} controls playsInline preload="none" aria-label={video.title} />
+                    <h2>{video.title}</h2>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className="video-empty">
+                Add .mp4, .webm or .ogg files to <code>src/videos</code> to show them here.
+              </p>
+            )}
+          </div>
+        </div>
+      )}
       <div className="bottom">
         <div className="hint">Scroll or drag to shift</div>
         <div className="mid">
           <div ref={capRef} className="cap" aria-live="polite" />
           <div className="filters">
             {categories.map((c) => (
-              <button key={c} aria-pressed={filter === c} onClick={() => setFilter(c)}>
+              <button
+                key={c}
+                aria-pressed={!showVideos && filter === c}
+                onClick={() => {
+                  setShowVideos(false)
+                  setFilter(c)
+                }}
+              >
                 {c}
               </button>
             ))}
+            <button aria-pressed={showVideos} onClick={() => setShowVideos(true)}>
+              Videos
+            </button>
           </div>
         </div>
         <div className="count">
-          {count} {count === 1 ? 'image' : 'images'}
+          {showVideos
+            ? `${videos.length} ${videos.length === 1 ? 'video' : 'videos'}`
+            : `${count} ${count === 1 ? 'image' : 'images'}`}
         </div>
       </div>
     </section>

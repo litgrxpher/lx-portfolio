@@ -16,6 +16,10 @@ Drop images into `src/photos/` (named `01.jpg`, `02.jpg`, ...). They appear on t
 
 To give a photo a real title, category, year or note, open `src/data/projects.js` and fill in `OVERRIDES`, using the file name (without extension) as the key.
 
+## Add videos
+
+Drop `.mp4`, `.webm` or `.ogg` files into `src/videos/`. They appear in the **Videos** section of the archive automatically; each filename becomes its title. Videos only load when visitors press play.
+
 ## Change your details
 
 Name, role, email and social links are all in `src/data/site.js`. Colours, fonts and spacing are at the top of `src/styles.css`.
