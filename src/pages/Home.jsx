@@ -2,16 +2,17 @@ import { useEffect, useMemo, useRef } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Chars } from '../components/Reveal'
-import { projects } from '../data/projects'
+import { allItems } from '../data/series'
 import { site } from '../data/site'
 
-const ORB_N = Math.min(9, projects.length)
+const imgs = allItems.filter((i) => i.type === 'image')
+const ORB_N = Math.min(9, imgs.length)
 
 export default function Home() {
   const navigate = useNavigate()
   const orbs = useRef([])
   const picks = useMemo(
-    () => Array.from({ length: ORB_N }, (_, k) => projects[Math.floor((k * projects.length) / ORB_N)]),
+    () => Array.from({ length: ORB_N }, (_, k) => imgs[Math.floor((k * imgs.length) / ORB_N)]),
     []
   )
 
@@ -110,14 +111,6 @@ export default function Home() {
         <span className="l"><Chars text={site.first} delay={0.15} /></span>
         <span className="r"><Chars text={site.last} delay={0.6} /></span>
       </h1>
-      <motion.p
-        className="role"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1.2, duration: 1 }}
-      >
-        {site.role}
-      </motion.p>
       <motion.div
         className="enter-wrap"
         initial={{ opacity: 0, y: 10 }}

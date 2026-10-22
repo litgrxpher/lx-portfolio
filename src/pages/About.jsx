@@ -1,6 +1,6 @@
 import { useRef } from 'react'
 import { motion, useScroll, useTransform } from 'framer-motion'
-import { projects } from '../data/projects'
+import { allItems } from '../data/series'
 import { site } from '../data/site'
 import { Words, FadeUp } from '../components/Reveal'
 import SayHello from '../components/SayHello'
@@ -10,7 +10,7 @@ function Float({ p, className, range }) {
   const { scrollYProgress } = useScroll({ target: ref, offset: ['start end', 'end start'] })
   const y = useTransform(scrollYProgress, [0, 1], range)
   return (
-    <motion.div ref={ref} className={'ab-img ' + className} style={{ y }} data-cursor="View">
+    <motion.div ref={ref} className={'ab-img ' + className} style={{ y }}>
       <div className="tilt">
         <img src={p.src} alt="" />
       </div>
@@ -19,8 +19,9 @@ function Float({ p, className, range }) {
 }
 
 export default function About() {
-  const n = projects.length
-  const pick = (i) => projects[i % n]
+  const imgs = allItems.filter((i) => i.type === 'image')
+  const n = imgs.length
+  const pick = (i) => imgs[i % n]
   const words = ['Design', 'Video', 'Photography', 'Engineering']
 
   return (

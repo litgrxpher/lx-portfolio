@@ -6,8 +6,8 @@ import Cursor from './components/Cursor'
 import SmoothScroll from './components/SmoothScroll'
 import Home from './pages/Home'
 import Archive from './pages/Archive'
-import Project from './pages/Project'
 import About from './pages/About'
+import Series from './pages/Series'
 
 function Page({ children }) {
   return (
@@ -49,7 +49,8 @@ export default function App() {
         <Routes location={location} key={pathname}>
           <Route path="/" element={<Page><Home /></Page>} />
           <Route path="/archive" element={<Page><Archive /></Page>} />
-          <Route path="/work/:slug" element={<Page><Project /></Page>} />
+          <Route path="/series/:slug/:n?" element={<Page><Series /></Page>} />
+          <Route path="/work/*" element={<Navigate to="/archive" replace />} />
           <Route path="/about" element={<Page><About /></Page>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

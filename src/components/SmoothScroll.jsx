@@ -11,6 +11,7 @@ export default function SmoothScroll() {
     if (pathname === '/' || pathname === '/archive') return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     const lenis = new Lenis({ lerp: 0.1, smoothWheel: true })
+    window.__lenis = lenis
     let raf = 0
     const loop = (t) => {
       lenis.raf(t)
@@ -19,6 +20,7 @@ export default function SmoothScroll() {
     raf = requestAnimationFrame(loop)
     return () => {
       cancelAnimationFrame(raf)
+      delete window.__lenis
       lenis.destroy()
     }
   }, [pathname])
