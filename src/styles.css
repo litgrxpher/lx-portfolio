@@ -156,7 +156,7 @@ nav .ul { position: absolute; left: 0; right: 0; bottom: 0; height: 1.5px; backg
 .mid { text-align: center; }
 .cap { min-height: 1.5em; margin-bottom: 8px; font-size: 16px; }
 @media (max-width: 700px) {
-  .hint, .count { display: none; }
+  .hint, .count, .archive-nav { display: none; }
   .bottom { grid-template-columns: 1fr; }
   .tile .in img { filter: none; }
 }
