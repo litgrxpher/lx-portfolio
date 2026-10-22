@@ -28,6 +28,7 @@ export default function Home() {
     let tpy = 0
     let raf = 0
     let locked = false
+    let exiting = false
     const tick = () => {
       if (animate) ang += 0.0007
       px += (tpx - px) * 0.06
@@ -54,17 +55,42 @@ export default function Home() {
         style.opacity = `${0.35 + 0.65 * depth}`
         style.zIndex = `${Math.round(depth * 10)}`
       })
-      if (animate) raf = requestAnimationFrame(tick)
+      if (animate && !exiting) raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
 
-    const go = () => {
+    const go = (fromScroll = false) => {
       if (locked) return
       locked = true
-      navigate('/archive')
+      const shouldTransition =
+        fromScroll &&
+        animate &&
+        window.innerWidth > 640 &&
+        window.matchMedia('(hover: hover) and (pointer: fine)').matches
+      if (shouldTransition) exiting = true
+      cancelAnimationFrame(raf)
+      const heroImages = shouldTransition
+        ? picks.flatMap((item, index) => {
+            const orb = orbs.current[index]
+            const image = orb?.querySelector('img')
+            const rect = orb?.getBoundingClientRect()
+            if (!image || !rect || rect.width < 1 || rect.height < 1) return []
+            return [{
+              id: item.id,
+              src: image.currentSrc || image.src,
+              x: rect.x,
+              y: rect.y,
+              width: rect.width,
+              height: rect.height,
+            }]
+          })
+        : undefined
+      navigate('/archive', {
+        state: heroImages?.length ? { heroImages } : undefined,
+      })
     }
     const onWheel = (event) => {
-      if (event.deltaY > 18 || Math.abs(event.deltaX) > 40) go()
+      if (event.deltaY > 18 || Math.abs(event.deltaX) > 40) go(true)
     }
     let touchStart = null
     const onTouchStart = (event) => {
@@ -92,7 +118,7 @@ export default function Home() {
     }
     const onResize = () => {
       cancelAnimationFrame(raf)
-      raf = requestAnimationFrame(tick)
+      if (!exiting) raf = requestAnimationFrame(tick)
     }
 
     window.addEventListener('wheel', onWheel, { passive: true })
@@ -112,7 +138,7 @@ export default function Home() {
       window.removeEventListener('resize', onResize)
       if (!touch) window.removeEventListener('pointermove', onMove)
     }
-  }, [navigate, orbCount])
+  }, [navigate, orbCount, picks])
 
   return (
     <section className="home" aria-label="Intro">
@@ -121,7 +147,11 @@ export default function Home() {
       </video>
       <div className="ring" aria-hidden="true">
         {picks.map((item, index) => (
-          <span key={item.id} className="orb" ref={(el) => (orbs.current[index] = el)}>
+          <span
+            key={item.id}
+            className="orb"
+            ref={(el) => (orbs.current[index] = el)}
+          >
             <img
               src={item.src}
               alt=""
