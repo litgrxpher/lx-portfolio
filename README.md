@@ -1,3 +1,4 @@
+
 # Adharsh CS — portfolio
 
 A React + Vite site: a hero intro, a draggable archive that mixes every photo at random, a page for each series (place or topic) and an About page. It uses Framer Motion for animation and Lenis for smooth scrolling.
