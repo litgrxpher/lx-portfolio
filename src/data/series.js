@@ -62,12 +62,21 @@ export const series = folders.map((folder, si) => {
     link: info.link || site.behance,
     items: [],
   }
+  const order = Array.isArray(info.order) ? info.order : []
   s.items = groups[folder]
-    .sort(
-      (a, b) =>
+    .sort((a, b) => {
+      const aOrder = order.indexOf(a.file)
+      const bOrder = order.indexOf(b.file)
+      if (aOrder !== -1 || bOrder !== -1) {
+        if (aOrder === -1) return 1
+        if (bOrder === -1) return -1
+        if (aOrder !== bOrder) return aOrder - bOrder
+      }
+      return (
         Number(a.type === 'video') - Number(b.type === 'video') ||
         a.file.localeCompare(b.file, undefined, { numeric: true })
-    )
+      )
+    })
     .map((it, k) => ({
       id: `${slug}-${k}`,
       file: it.file,

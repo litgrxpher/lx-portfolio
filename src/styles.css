@@ -148,13 +148,17 @@ nav .ul { position: absolute; left: 0; right: 0; bottom: 0; height: 1.5px; backg
 .count { text-align: right; color: var(--mute); }
 .mid { text-align: center; }
 .cap { min-height: 1.5em; margin-bottom: 8px; font-size: 16px; }
-@media (max-width: 700px) { .hint, .count { display: none; } .bottom { grid-template-columns: 1fr; } }
+@media (max-width: 700px) {
+  .hint, .count { display: none; }
+  .bottom { grid-template-columns: 1fr; }
+  .tile .in img { filter: none; }
+}
 @media (hover: none), (pointer: coarse) {
   .orb { will-change: auto; }
   .tile { transition: none; }
   .tile .in { transition: none; }
   .tile:hover .in, .tile:focus-visible .in { transform: none; box-shadow: none; }
-  .tile .in img { filter: grayscale(1) contrast(0.95); transition: none; }
+  .tile .in img { filter: none; transition: none; }
 }
 
 /* ===== Content pages (about) ===== */

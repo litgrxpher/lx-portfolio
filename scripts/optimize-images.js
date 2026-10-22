@@ -53,6 +53,23 @@ async function acquireLock() {
   throw new Error('Timed out waiting for another image optimization process to finish.')
 }
 
+async function replaceFileWithRetry(sourcePath, outputPath) {
+  const retryableErrors = new Set(['EBUSY', 'EACCES', 'EPERM'])
+  const deadline = Date.now() + 10_000
+  let delay = 100
+
+  while (true) {
+    try {
+      await rename(sourcePath, outputPath)
+      return
+    } catch (error) {
+      if (!retryableErrors.has(error.code) || Date.now() >= deadline) throw error
+      await new Promise((resolve) => setTimeout(resolve, delay))
+      delay = Math.min(delay * 2, 1000)
+    }
+  }
+}
+
 async function optimizeDirectory(sourceDir, assetPrefix) {
   const entries = await readdir(sourceDir, { withFileTypes: true })
 
@@ -71,6 +88,16 @@ async function optimizeDirectory(sourceDir, assetPrefix) {
     const outputPath = path.join(outputDir, outputRelativePath)
     const temporaryPath = `${outputPath}.${process.pid}.tmp.webp`
 
+    try {
+      const [sourceStats, outputStats] = await Promise.all([stat(sourcePath), stat(outputPath)])
+      if (outputStats.mtimeMs >= sourceStats.mtimeMs) {
+        manifest[`../${relativePath}`] = `/optimized/${outputRelativePath.replaceAll(path.sep, '/')}`
+        continue
+      }
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error
+    }
+
     await mkdir(path.dirname(outputPath), { recursive: true })
     try {
       await sharp(sourcePath)
@@ -78,7 +105,7 @@ async function optimizeDirectory(sourceDir, assetPrefix) {
         .resize({ width: 2000, height: 2000, fit: 'inside', withoutEnlargement: true })
         .webp({ quality: 80, effort: 5 })
         .toFile(temporaryPath)
-      await rename(temporaryPath, outputPath)
+      await replaceFileWithRetry(temporaryPath, outputPath)
     } finally {
       await rm(temporaryPath, { force: true })
     }

@@ -27,6 +27,7 @@ The dev server and production build automatically generate WebP versions of phot
   "date": "August 2026",
   "category": "Travel",
   "description": "A few lines about the place and the trip.",
+  "order": ["01.jpg", "02.jpg"],
   "cover": "01.jpg",
   "details": { "Camera": "iPhone 15 Pro", "Weather": "Mist and light rain" },
   "captions": { "01.jpg": "First light on the tea hills" }
@@ -34,6 +35,8 @@ The dev server and production build automatically generate WebP versions of phot
 ```
 
 Every field is optional and anything you leave empty is simply hidden. `details` can hold any extra labels you like. Save, and the series appears in the archive, mixed in at random with the others. Clicking any of its photos opens that series' page.
+
+Use the optional `order` array to place specific filenames first in the gallery, in the order listed. Any files not listed follow in their normal filename order.
 
 ## Change your details
 

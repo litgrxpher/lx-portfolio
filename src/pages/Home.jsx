@@ -66,13 +66,19 @@ export default function Home() {
     const onWheel = (event) => {
       if (event.deltaY > 18 || Math.abs(event.deltaX) > 40) go()
     }
-    let touchY = null
+    let touchStart = null
     const onTouchStart = (event) => {
-      touchY = event.touches[0].clientY
+      const touch = event.touches[0]
+      touchStart = { x: touch.clientX, y: touch.clientY }
     }
     const onTouchEnd = (event) => {
-      if (touchY !== null && touchY - event.changedTouches[0].clientY > 50) go()
-      touchY = null
+      const touch = event.changedTouches[0]
+      if (touchStart && touch) {
+        const deltaX = touch.clientX - touchStart.x
+        const deltaY = touch.clientY - touchStart.y
+        if (deltaY < -50 && Math.abs(deltaY) > Math.abs(deltaX)) go()
+      }
+      touchStart = null
     }
     const onKey = (event) => {
       if (!['ArrowDown', 'PageDown', ' ', 'Enter'].includes(event.key)) return
@@ -84,18 +90,26 @@ export default function Home() {
       tpx = (event.clientX / window.innerWidth - 0.5) * 2
       tpy = (event.clientY / window.innerHeight - 0.5) * 2
     }
+    const onResize = () => {
+      cancelAnimationFrame(raf)
+      raf = requestAnimationFrame(tick)
+    }
 
     window.addEventListener('wheel', onWheel, { passive: true })
     window.addEventListener('touchstart', onTouchStart, { passive: true })
     window.addEventListener('touchend', onTouchEnd)
+    window.addEventListener('touchcancel', onTouchEnd)
     window.addEventListener('keydown', onKey)
+    window.addEventListener('resize', onResize)
     if (!touch) window.addEventListener('pointermove', onMove)
     return () => {
       cancelAnimationFrame(raf)
       window.removeEventListener('wheel', onWheel)
       window.removeEventListener('touchstart', onTouchStart)
       window.removeEventListener('touchend', onTouchEnd)
+      window.removeEventListener('touchcancel', onTouchEnd)
       window.removeEventListener('keydown', onKey)
+      window.removeEventListener('resize', onResize)
       if (!touch) window.removeEventListener('pointermove', onMove)
     }
   }, [navigate, orbCount])
