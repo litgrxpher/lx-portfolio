@@ -24,18 +24,63 @@ const slide = {
 }
 const firstLook = { x: 0, opacity: 0, scale: 1.12, filter: 'grayscale(1)' }
 
+// Natural width / height of every photo and video, so each one is shown in its own shape
+const ratioCache = new Map()
+function useRatios(items) {
+  const [, bump] = useState(0)
+  useEffect(() => {
+    let alive = true
+    items.forEach((it) => {
+      if (ratioCache.has(it.id)) return
+      if (it.type === 'video') {
+        const v = document.createElement('video')
+        v.preload = 'metadata'
+        v.muted = true
+        v.onloadedmetadata = () => {
+          if (v.videoWidth) ratioCache.set(it.id, v.videoWidth / v.videoHeight)
+          if (alive) bump((x) => x + 1)
+          v.removeAttribute('src')
+          v.load()
+        }
+        v.src = it.src
+      } else {
+        const im = new Image()
+        im.onload = () => {
+          ratioCache.set(it.id, im.naturalWidth / im.naturalHeight)
+          if (alive) bump((x) => x + 1)
+        }
+        im.src = it.src
+      }
+    })
+    return () => {
+      alive = false
+    }
+  }, [items])
+}
+
 function Media({ it, className, ...rest }) {
   if (it.type === 'video') {
     return (
-      <motion.video className={className} src={it.src} muted loop autoPlay playsInline preload="metadata" {...rest} />
+      <motion.video
+        className={className}
+        src={it.src}
+        data-id={it.id}
+        muted
+        loop
+        autoPlay
+        playsInline
+        preload="metadata"
+        {...rest}
+      />
     )
   }
   return <motion.img className={className} src={it.src} alt={it.caption || it.series.title} draggable={false} {...rest} />
 }
 
 // The big viewer: cursor-following tilt and glare, slides between frames
-function Viewer({ items, active, dir, go }) {
+function Viewer({ items, active, dir, go, sound, setSound, ar }) {
   const it = items[active]
+  const frameRef = useRef(null)
   const mx = useMotionValue(0.5)
   const my = useMotionValue(0.5)
   const rotY = useSpring(useTransform(mx, [0, 1], [9, -9]), { stiffness: 140, damping: 18 })
@@ -44,9 +89,28 @@ function Viewer({ items, active, dir, go }) {
   const gy = useTransform(my, (v) => `${v * 100}%`)
   const glare = useMotionTemplate`radial-gradient(circle at ${gx} ${gy}, rgba(255,255,255,0.2), transparent 55%)`
 
+  // Sound on/off applies to the video on screen; any video sliding out stays muted
+  useEffect(() => {
+    if (!frameRef.current) return
+    frameRef.current.querySelectorAll('video').forEach((v) => {
+      const want = sound && v.dataset.id === it.id
+      v.muted = !want
+      if (want && v.paused) {
+        const p = v.play()
+        if (p && p.catch) {
+          p.catch(() => {
+            v.muted = true
+            setSound(false)
+          })
+        }
+      }
+    })
+  }, [sound, it.id, setSound])
+
   return (
     <div
       className="sr-view"
+      style={{ '--ar': ar }}
       onPointerMove={(e) => {
         const r = e.currentTarget.getBoundingClientRect()
         mx.set((e.clientX - r.left) / r.width)
@@ -57,7 +121,7 @@ function Viewer({ items, active, dir, go }) {
         my.set(0.5)
       }}
     >
-      <motion.div className="sr-frame" style={{ rotateX: rotX, rotateY: rotY, transformPerspective: 1200 }}>
+      <motion.div ref={frameRef} className="sr-frame" style={{ rotateX: rotX, rotateY: rotY, transformPerspective: 1200 }}>
         <AnimatePresence initial={false} custom={dir}>
           <Media
             key={it.id}
@@ -77,6 +141,16 @@ function Viewer({ items, active, dir, go }) {
         <button onClick={() => go(-1)} aria-label="Previous" data-cursor="Prev">←</button>
         <span>{pad(active + 1)} / {pad(items.length)}</span>
         <button onClick={() => go(1)} aria-label="Next" data-cursor="Next">→</button>
+        {it.type === 'video' && (
+          <button
+            className="sr-sound"
+            onClick={() => setSound((v) => !v)}
+            aria-pressed={sound}
+            data-cursor={sound ? 'Mute' : 'Sound'}
+          >
+            {sound ? 'Sound on' : 'Sound off'}
+          </button>
+        )}
       </div>
       <p className="sr-cap">{it.caption}</p>
     </div>
@@ -103,7 +177,10 @@ function Card({ it, k, onPick }) {
       aria-label={`Show frame ${k + 1}`}
     >
       {it.type === 'video' ? (
-        <video src={it.src} muted loop autoPlay playsInline preload="metadata" />
+        <>
+          <video src={`${it.src}#t=0.1`} muted playsInline preload="metadata" />
+          <i className="sr-badge">Video</i>
+        </>
       ) : (
         <img src={it.src} alt="" loading="lazy" />
       )}
@@ -122,6 +199,8 @@ export default function Series() {
   const [active, setActive] = useState(startIdx)
   const [dir, setDir] = useState(0)
   const stripRef = useRef(null)
+  const [sound, setSound] = useState(false)
+  useRatios(items)
 
   const go = (d) => {
     setDir(d)
@@ -169,6 +248,8 @@ export default function Series() {
     ['Frames', frames],
     ...Object.entries(s.details),
   ].filter(([, v]) => v)
+  const cur = items[active]
+  const ar = (cur && ratioCache.get(cur.id)) || 0.75
   const next = series.length > 1 ? series[(si + 1) % series.length] : null
   const cover = next && (next.items.find((i) => i.type === 'image') || next.items[0])
 
@@ -196,7 +277,7 @@ export default function Series() {
             </dl>
           </FadeUp>
         </div>
-        <Viewer items={items} active={active} dir={dir} go={go} />
+        <Viewer items={items} active={active} dir={dir} go={go} sound={sound} setSound={setSound} ar={ar} />
       </section>
 
       <div className="sr-strip" ref={stripRef}>
@@ -210,7 +291,7 @@ export default function Series() {
             data-cursor="View"
           >
             {m.type === 'video' ? (
-              <video src={m.src} muted playsInline preload="metadata" />
+              <video src={`${m.src}#t=0.1`} muted playsInline preload="metadata" />
             ) : (
               <img src={m.src} alt="" loading="lazy" />
             )}

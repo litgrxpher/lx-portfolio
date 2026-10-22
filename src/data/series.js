@@ -65,3 +65,12 @@ export const series = folders.map((folder, si) => {
 
 export const allItems = series.flatMap((s) => s.items)
 export const hasVideo = allItems.some((i) => i.type === 'video')
+
+// The archive only shows photos (videos made it laggy). A series that has no photos
+// at all still gets a text tile so it can be reached.
+export const archiveItems = [
+  ...allItems.filter((i) => i.type === 'image'),
+  ...series
+    .filter((s) => !s.items.some((i) => i.type === 'image'))
+    .map((s) => ({ id: `${s.slug}-title`, type: 'title', index: 0, series: s, src: '' })),
+]

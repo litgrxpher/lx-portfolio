@@ -1,6 +1,6 @@
 # Adharsh CS — portfolio
 
-A React + Vite site: a hero intro, a draggable archive that mixes every photo and video at random, a page for each series (place or topic) and an About page. It uses Framer Motion for animation and Lenis for smooth scrolling.
+A React + Vite site: a hero intro, a draggable archive that mixes every photo at random, a page for each series (place or topic) and an About page. It uses Framer Motion for animation and Lenis for smooth scrolling.
 
 ## Run it
 
@@ -14,7 +14,7 @@ npm run build    # production build into /dist
 
 1. Make a folder inside `src/series/`. The number at the start sets the order, for example `03-munnar`.
 2. Put the photos in it (`01.jpg`, `02.jpg`, ...). Resize big photos to about 1400px wide first.
-3. Optional: add looping videos (`clip.mp4`, `.webm`). Keep them short (about 3 to 8 seconds), muted, and under a few MB. Each one becomes a looping video card in the archive.
+3. Optional: add videos (`clip.mp4`, `.webm`). They do not appear in the archive (that keeps it smooth). On the series page they play in their original shape, looping and muted by default, with a Sound on/off button. Keep them compressed (a few MB each).
 4. Add an `info.json` in the same folder:
 
 ```json

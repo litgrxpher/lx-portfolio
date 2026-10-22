@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { allItems, series, hasVideo } from '../data/series'
+import { archiveItems as allItems, series } from '../data/series'
 
 const N = allItems.length
 const mod = (a, n) => ((a % n) + n) % n
@@ -51,7 +51,7 @@ function computeLayout(vw, vh, order) {
   return { cw, ch, bw: cols * sx + sx * 0.3, bh: rows * sy, cells }
 }
 
-const filters = ['All', ...new Set(series.map((s) => s.title)), ...(hasVideo ? ['Video'] : [])]
+const filters = ['All', ...new Set(series.map((s) => s.title))]
 
 export default function Archive() {
   const navigate = useNavigate()
@@ -63,7 +63,6 @@ export default function Archive() {
   const stageRef = useRef(null)
   const capRef = useRef(null)
   const tiles = useRef([])
-  const vids = useRef([])
   const pos = useRef({ x: 0, y: 0 })
   const moved = useRef(0)
 
@@ -88,7 +87,6 @@ export default function Archive() {
     const stage = stageRef.current
     if (!stage || !N) return
     const { cw, ch, bw, bh, cells } = layout
-    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     let vx = 0,
       vy = 0,
       dirty = true,
@@ -105,20 +103,14 @@ export default function Archive() {
       for (const c of cells) {
         const el = tiles.current[c.k]
         if (!el) continue
-        const v = vids.current[c.k]
         const x = mod(c.bx + p.x + cw, bw) - cw
         const y = mod(c.by + p.y + ch, bh) - ch
         const s = el.style
         if (x > vw || x < -cw || y > vh || y < -ch) {
           s.visibility = 'hidden'
-          if (v && !v.paused) v.pause()
           continue
         }
         s.visibility = 'visible'
-        if (v && v.paused && !reduce) {
-          const pr = v.play()
-          if (pr && pr.catch) pr.catch(() => {})
-        }
         const nx = (x + cw / 2 - vw / 2) / (vw / 2)
         const ny = (y + ch / 2 - vh / 2) / (vh / 2)
         const r = Math.min(1.4, Math.hypot(nx, ny * 0.9))
@@ -222,7 +214,7 @@ export default function Archive() {
     if (capRef.current) capRef.current.textContent = text
   }
   const isDim = (it) =>
-    filter !== 'All' && (filter === 'Video' ? it.type !== 'video' : it.series.title !== filter)
+    filter !== 'All' && it.series.title !== filter
   const count = allItems.filter((it) => !isDim(it)).length
 
   if (!N) {
@@ -236,7 +228,7 @@ export default function Archive() {
   }
 
   return (
-    <section className="archive" aria-label="Photo and video archive">
+    <section className="archive" aria-label="Photo archive">
       <div
         ref={stageRef}
         className="stage"
@@ -262,7 +254,7 @@ export default function Archive() {
                 className={'tile' + (isDim(it) ? ' dim' : '')}
                 style={{ width: layout.cw, height: layout.ch }}
                 data-cursor="Open"
-                aria-label={`${label}, ${it.type}`}
+                aria-label={label}
                 tabIndex={c.k < N ? 0 : -1}
                 aria-hidden={c.k >= N ? true : undefined}
                 onMouseEnter={() => setCap(label)}
@@ -274,20 +266,8 @@ export default function Archive() {
                 }}
               >
                 <span className="in">
-                  {it.type === 'video' ? (
-                    <>
-                      <video
-                        ref={(el) => {
-                          vids.current[c.k] = el
-                        }}
-                        src={it.src}
-                        muted
-                        loop
-                        playsInline
-                        preload="metadata"
-                      />
-                      <i className="badge">Video</i>
-                    </>
+                  {it.type === 'title' ? (
+                    <span className="ph">{it.series.title}</span>
                   ) : (
                     <img src={it.src} alt="" draggable={false} decoding="async" />
                   )}
