@@ -12,7 +12,7 @@ function Float({ p, className, range }) {
   return (
     <motion.div ref={ref} className={'ab-img ' + className} style={{ y }}>
       <div className="tilt">
-        <img src={p.src} alt="" />
+        <img src={p.src} alt="" decoding="async" />
       </div>
     </motion.div>
   )

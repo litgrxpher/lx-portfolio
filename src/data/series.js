@@ -1,4 +1,5 @@
 import { site } from './site'
+import optimizedImages from './optimized-images.json'
 
 // HOW CONTENT WORKS
 // Each folder inside src/series is one series (a place or a topic):
@@ -9,9 +10,10 @@ import { site } from './site'
 // Folders are shown in name order. Everything is picked up automatically.
 
 const media = import.meta.glob(
-  '../series/*/*.{jpg,jpeg,png,webp,avif,mp4,webm,mov,JPG,JPEG,PNG,WEBP,MP4,WEBM,MOV}',
+  '../series/*/*.{mp4,webm,mov,MP4,WEBM,MOV}',
   { eager: true, query: '?url', import: 'default' }
 )
+const imagePaths = Object.keys(optimizedImages).filter((path) => path.startsWith('../series/'))
 const infos = import.meta.glob('../series/*/info.json', { eager: true, import: 'default' })
 
 const isVideo = (file) => /\.(mp4|webm|mov)$/i.test(file)
@@ -27,6 +29,16 @@ for (const [path, src] of Object.entries(media)) {
   const folder = parts[parts.length - 2]
   const file = parts[parts.length - 1]
   ;(groups[folder] = groups[folder] || []).push({ file, src, type: isVideo(file) ? 'video' : 'image' })
+}
+for (const path of imagePaths) {
+  const parts = path.split('/')
+  const folder = parts[parts.length - 2]
+  const file = parts[parts.length - 1]
+  ;(groups[folder] = groups[folder] || []).push({
+    file,
+    src: optimizedImages[path],
+    type: 'image',
+  })
 }
 
 const folders = Object.keys(groups).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))

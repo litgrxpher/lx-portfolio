@@ -34,7 +34,7 @@ export default function Project() {
             animate={{ clipPath: 'inset(0 0 0% 0)' }}
             transition={{ duration: 1, ease }}
           >
-            <img src={p.src} alt={p.title} />
+            <img src={p.src} alt={p.title} decoding="async" fetchPriority="high" />
           </motion.div>
           <p className="fr">Frame {pad(idx + 1)} of {pad(projects.length)}</p>
         </div>
@@ -58,7 +58,7 @@ export default function Project() {
       <h1 className="vtitle"><Words text={p.title} /></h1>
 
       <div ref={bigRef} className="big-frame">
-        <motion.img src={p.src} alt="" style={{ y, scale }} />
+        <motion.img src={p.src} alt="" loading="lazy" decoding="async" style={{ y, scale }} />
       </div>
 
       <Link className="next" to={`/work/${next.slug}`} data-cursor="Next">
@@ -67,7 +67,7 @@ export default function Project() {
           <b>{next.title}</b>
         </span>
         <span className="next-r">
-          <img src={next.src} alt="" />
+          <img src={next.src} alt="" loading="lazy" decoding="async" />
           <i>→</i>
         </span>
       </Link>

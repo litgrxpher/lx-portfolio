@@ -24,41 +24,8 @@ const slide = {
 }
 const firstLook = { x: 0, opacity: 0, scale: 1.12 }
 
-// Natural width / height of every photo and video, so each one is shown in its own shape
 const ratioCache = new Map()
-function useRatios(items) {
-  const [, bump] = useState(0)
-  useEffect(() => {
-    let alive = true
-    items.forEach((it) => {
-      if (ratioCache.has(it.id)) return
-      if (it.type === 'video') {
-        const v = document.createElement('video')
-        v.preload = 'metadata'
-        v.muted = true
-        v.onloadedmetadata = () => {
-          if (v.videoWidth) ratioCache.set(it.id, v.videoWidth / v.videoHeight)
-          if (alive) bump((x) => x + 1)
-          v.removeAttribute('src')
-          v.load()
-        }
-        v.src = it.src
-      } else {
-        const im = new Image()
-        im.onload = () => {
-          ratioCache.set(it.id, im.naturalWidth / im.naturalHeight)
-          if (alive) bump((x) => x + 1)
-        }
-        im.src = it.src
-      }
-    })
-    return () => {
-      alive = false
-    }
-  }, [items])
-}
-
-function Media({ it, className, ...rest }) {
+function Media({ it, className, onRatio, ...rest }) {
   if (it.type === 'video') {
     return (
       <motion.video
@@ -70,15 +37,32 @@ function Media({ it, className, ...rest }) {
         autoPlay
         playsInline
         preload="metadata"
+        onLoadedMetadata={(event) => {
+          const video = event.currentTarget
+          if (video.videoWidth && video.videoHeight) onRatio(video.videoWidth / video.videoHeight)
+        }}
         {...rest}
       />
     )
   }
-  return <motion.img className={className} src={it.src} alt={it.series.title} draggable={false} {...rest} />
+  return (
+    <motion.img
+      className={className}
+      src={it.src}
+      alt={it.series.title}
+      draggable={false}
+      decoding="async"
+      onLoad={(event) => {
+        const image = event.currentTarget
+        if (image.naturalWidth && image.naturalHeight) onRatio(image.naturalWidth / image.naturalHeight)
+      }}
+      {...rest}
+    />
+  )
 }
 
 // The big viewer: cursor-following tilt and glare, slides between frames
-function Viewer({ items, active, dir, go, sound, setSound, ar, viewerRef }) {
+function Viewer({ items, active, dir, go, sound, setSound, ar, viewerRef, onRatio }) {
   const it = items[active]
   const frameRef = useRef(null)
   const mx = useMotionValue(0.5)
@@ -128,6 +112,7 @@ function Viewer({ items, active, dir, go, sound, setSound, ar, viewerRef }) {
             key={it.id}
             it={it}
             className="sr-media"
+            onRatio={onRatio}
             custom={dir}
             variants={slide}
             initial={dir === 0 ? firstLook : 'enter'}
@@ -203,7 +188,12 @@ export default function Series() {
   const stripRef = useRef(null)
   const viewerRef = useRef(null)
   const [sound, setSound] = useState(false)
-  useRatios(items)
+  const [, bumpRatio] = useState(0)
+  const recordRatio = (ratio) => {
+    if (ratioCache.get(items[active]?.id) === ratio) return
+    ratioCache.set(items[active].id, ratio)
+    bumpRatio((value) => value + 1)
+  }
 
   const go = (d) => {
     setDir(d)
@@ -313,6 +303,7 @@ export default function Series() {
           setSound={setSound}
           ar={ar}
           viewerRef={viewerRef}
+          onRatio={recordRatio}
         />
       </section>
 
@@ -329,7 +320,7 @@ export default function Series() {
             {m.type === 'video' ? (
               <video src={`${m.src}#t=0.1`} muted playsInline preload="metadata" />
             ) : (
-              <img src={m.src} alt="" loading="lazy" />
+              <img src={m.src} alt="" loading="lazy" decoding="async" />
             )}
             <span>{pad(k + 1)}</span>
           </button>
@@ -350,7 +341,9 @@ export default function Series() {
             {next.location && <em>{next.location}</em>}
           </span>
           <span className="sr-next-r">
-            {cover && cover.type === 'image' && <img src={cover.src} alt="" />}
+            {cover && cover.type === 'image' && (
+              <img src={cover.src} alt="" loading="lazy" decoding="async" />
+            )}
             <i>→</i>
           </span>
         </Link>

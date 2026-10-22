@@ -1,5 +1,7 @@
 node_modules
 dist
 .vercel
+/public/optimized
+/src/data/optimized-images.json
 .DS_Store
 *.log

@@ -11,10 +11,12 @@ npm run dev      # local preview at http://localhost:5173
 npm run build    # production build into /dist
 ```
 
+The dev server and production build automatically generate WebP versions of photos in `src/photos` and `src/series`, resized to at most 2000 × 2000 pixels. Generated files are not committed; keep the original photos in those folders.
+
 ## Add a new series (a place or topic)
 
 1. Make a folder inside `src/series/`. The number at the start sets the order, for example `03-munnar`.
-2. Put the photos in it (`01.jpg`, `02.jpg`, ...). Resize big photos to about 1400px wide first.
+2. Put the photos in it (`01.jpg`, `02.jpg`, ...). The dev server and production build generate resized WebP versions automatically.
 3. Optional: add videos (`clip.mp4`, `.webm`). They do not appear in the archive (that keeps it smooth). On the series page they play in their original shape, looping and muted by default, with a Sound on/off button. Keep them compressed (a few MB each).
 4. Add an `info.json` in the same folder:
 
