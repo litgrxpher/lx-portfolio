@@ -33,6 +33,7 @@ function ScrollProgress() {
 export default function App() {
   const location = useLocation()
   const { pathname } = location
+  const heroArchiveTransition = pathname === '/' || pathname === '/archive'
 
   useEffect(() => {
     document.body.dataset.page =
@@ -46,7 +47,7 @@ export default function App() {
       <Cursor />
       <ScrollProgress />
       <Header />
-      <AnimatePresence mode="wait" initial={false}>
+      <AnimatePresence mode={heroArchiveTransition ? 'sync' : 'wait'} initial={false}>
         <Routes location={location} key={pathname}>
           <Route path="/" element={<Page><Home /></Page>} />
           <Route path="/archive" element={<Page><Archive /></Page>} />

@@ -116,6 +116,9 @@ export default function Home() {
 
   return (
     <section className="home" aria-label="Intro">
+      <video className="home-video" autoPlay muted loop playsInline aria-hidden="true">
+        <source src="/hero.mp4" type="video/mp4" />
+      </video>
       <div className="ring" aria-hidden="true">
         {picks.map((item, index) => (
           <span key={item.id} className="orb" ref={(el) => (orbs.current[index] = el)}>
