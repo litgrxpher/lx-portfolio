@@ -5,7 +5,6 @@ const C = 100
 const F_MIN = 1.4
 const F_MAX = 16
 const STEPS = 21
-const KEY = 'aperture-t'
 const LIGHT = [243, 240, 234]
 const DARK = [10, 10, 11]
 const FG_LIGHT = [242, 240, 235]
@@ -29,17 +28,7 @@ const TICKS = Array.from({ length: STEPS + 1 }, (_, index) => {
   return { index, x1, y1, x2, y2, major }
 })
 
-function readValue() {
-  try {
-    const value = parseFloat(localStorage.getItem(KEY))
-    if (value >= 0 && value <= 1) return value
-  } catch {
-    // Continue with the default when storage is unavailable.
-  }
-  return 0.8
-}
-
-function applyTheme(value, persist = true) {
+function applyTheme(value) {
   const background = mix(LIGHT, DARK, value)
   const foreground = mix(FG_DARK, FG_LIGHT, smooth(0.35, 0.65, value))
   const mute = mix([112, 110, 105], [141, 139, 148], smooth(0.35, 0.65, value))
@@ -57,21 +46,10 @@ function applyTheme(value, persist = true) {
   root.style.setProperty('--surface', cssColor(surface))
   root.style.colorScheme = value < 0.5 ? 'light' : 'dark'
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', cssColor(background))
-  if (persist) {
-    try {
-      localStorage.setItem(KEY, value.toFixed(4))
-      localStorage.setItem('aperture-colors', JSON.stringify({
-        bg: cssColor(background),
-        fg: cssColor(foreground),
-      }))
-    } catch {
-      // Theme updates still work when storage is unavailable.
-    }
-  }
 }
 
 export default function ApertureDial() {
-  const [value, setValue] = useState(readValue)
+  const [value, setValue] = useState(1)
   const [compact, setCompact] = useState(false)
   const [open, setOpen] = useState(false)
   const dial = useRef(null)
@@ -96,7 +74,7 @@ export default function ApertureDial() {
     lastStop.current = stop
   }, [value])
 
-  useEffect(() => () => applyTheme(1, false), [])
+  useEffect(() => () => applyTheme(1), [])
 
   useEffect(() => {
     const node = dial.current
@@ -227,6 +205,7 @@ export default function ApertureDial() {
         </svg>
       </div>
       <div className="read" aria-hidden="true">{label}</div>
+      <div className="dial-hint" aria-hidden="true">TURN ↺ FOR LIGHT</div>
     </div>
   )
 }

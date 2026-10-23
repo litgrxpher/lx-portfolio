@@ -20,7 +20,7 @@ export default function Header() {
 
   return (
     <header className={'top' + (onHome ? ' on-home' : '')}>
-      <Link to="/" className="brand" aria-label={`${site.name}, home`}>
+      <Link to="/archive" className="brand" aria-label={`${site.name}, archive`}>
         <b className="brand-mark">CS<span className="brand-dot">.</span></b>
       </Link>
       <nav aria-label="Main">
