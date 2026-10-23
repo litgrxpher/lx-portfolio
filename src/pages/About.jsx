@@ -5,6 +5,7 @@ import { allItems, series } from '../data/series'
 import { site } from '../data/site'
 import { Words, FadeUp } from '../components/Reveal'
 import SayHello from '../components/SayHello'
+import ApertureDial from '../components/ApertureDial'
 
 function Float({ p, className, range }) {
   const ref = useRef(null)
@@ -37,6 +38,7 @@ export default function About() {
 
   return (
     <article className="view about">
+      <ApertureDial />
       <p className="crumb">About</p>
       <div className="ab">
         <div className="ab-text">
