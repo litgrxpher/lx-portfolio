@@ -15,14 +15,14 @@ export default function Project() {
   const y = useTransform(scrollYProgress, [0, 1], ['-9%', '9%'])
   const scale = useTransform(scrollYProgress, [0, 0.5, 1], [1.18, 1.1, 1.18])
 
-  if (idx < 0) return <Navigate to="/archive" replace />
+  if (idx < 0) return <Navigate to="/series" replace />
   const p = projects[idx]
   const next = projects[(idx + 1) % projects.length]
   const pad = (n) => String(n).padStart(2, '0')
 
   return (
     <article className="view">
-      <Link to="/archive" className="back-link" data-cursor="Back">← Back to archive</Link>
+      <Link to="/series" className="back-link" data-cursor="Back">← Back to archives</Link>
       <p className="crumb">{p.category}{p.year ? ` · ${p.year}` : ''}</p>
 
       <div className="vtop">

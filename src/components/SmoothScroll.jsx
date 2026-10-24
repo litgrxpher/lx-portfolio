@@ -3,12 +3,12 @@ import { useLocation } from 'react-router-dom'
 import Lenis from 'lenis'
 
 // Buttery scrolling on the content pages (About, project pages).
-// The home and archive screens handle their own wheel and drag input.
+// The home screen handles its own wheel and drag input.
 export default function SmoothScroll() {
   const { pathname } = useLocation()
 
   useEffect(() => {
-    if (pathname === '/' || pathname === '/archive') return
+    if (pathname === '/') return
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return
     const lenis = new Lenis({ lerp: 0.1, smoothWheel: true })
     window.__lenis = lenis

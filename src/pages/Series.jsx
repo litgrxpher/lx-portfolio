@@ -251,7 +251,7 @@ export default function Series() {
     return () => strip.removeEventListener('wheel', onWheel)
   }, [])
 
-  if (!s || !count) return <Navigate to="/archive" replace />
+  if (!s || !count) return <Navigate to="/series" replace />
 
   const photos = items.filter((i) => i.type === 'image').length
   const videos = count - photos
@@ -277,7 +277,7 @@ export default function Series() {
   return (
     <article className="view sr">
       <div className="sr-top">
-        <Link to="/series" className="back-link" data-cursor="Back">← Back to series</Link>
+        <Link to="/series" className="back-link" data-cursor="Back">← Back to archives</Link>
         <span>Series {pad(si + 1)} / {pad(series.length)}</span>
       </div>
 

@@ -32,13 +32,13 @@ const latestFirst = [...series].sort((a, b) => dateRank(b.date) - dateRank(a.dat
 export default function SeriesIndex() {
   return (
     <article className="view series-index">
-      <p className="crumb">Browse by collection</p>
+      <p className="crumb">Browse the archives</p>
       <div className="series-index-heading">
-        <h1 className="vtitle">Series</h1>
+        <h1 className="vtitle">Archives</h1>
         <p>Places, people, and moments gathered into frames.</p>
       </div>
 
-      <section className="series-grid" aria-label="Photo series">
+      <section className="series-grid" aria-label="Photo archives">
         {latestFirst.map((item, index) => {
           const cover =
             item.items.find((media) => media.file === item.cover && media.type === 'image') ||

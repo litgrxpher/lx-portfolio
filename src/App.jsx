@@ -5,7 +5,6 @@ import Header from './components/Header'
 import Cursor from './components/Cursor'
 import SmoothScroll from './components/SmoothScroll'
 import Home from './pages/Home'
-import Archive from './pages/Archive'
 import About from './pages/About'
 import Series from './pages/Series'
 import SeriesIndex from './pages/SeriesIndex'
@@ -33,11 +32,9 @@ function ScrollProgress() {
 export default function App() {
   const location = useLocation()
   const { pathname } = location
-  const heroArchiveTransition = pathname === '/' || pathname === '/archive'
 
   useEffect(() => {
-    document.body.dataset.page =
-      pathname === '/' ? 'home' : pathname === '/archive' ? 'archive' : 'page'
+    document.body.dataset.page = pathname === '/' ? 'home' : 'page'
     window.scrollTo(0, 0)
   }, [pathname])
 
@@ -47,13 +44,13 @@ export default function App() {
       <Cursor />
       <ScrollProgress />
       <Header />
-      <AnimatePresence mode={heroArchiveTransition ? 'sync' : 'wait'} initial={false}>
+      <AnimatePresence mode="wait" initial={false}>
         <Routes location={location} key={pathname}>
           <Route path="/" element={<Page><Home /></Page>} />
-          <Route path="/archive" element={<Page><Archive /></Page>} />
           <Route path="/series" element={<Page><SeriesIndex /></Page>} />
           <Route path="/series/:slug/:n?" element={<Page><Series /></Page>} />
-          <Route path="/work/*" element={<Navigate to="/archive" replace />} />
+          <Route path="/archive" element={<Navigate to="/series" replace />} />
+          <Route path="/work/*" element={<Navigate to="/series" replace />} />
           <Route path="/about" element={<Page><About /></Page>} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
