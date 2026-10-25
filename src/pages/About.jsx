@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import { motion, useScroll, useTransform } from 'framer-motion'
 import { allItems, series } from '../data/series'
@@ -6,6 +6,8 @@ import { site } from '../data/site'
 import { Words, FadeUp } from '../components/Reveal'
 import SayHello from '../components/SayHello'
 import ApertureDial from '../components/ApertureDial'
+import Lanyard from '../components/Lanyard'
+import CurvedLoop from '../components/CurvedLoop'
 
 function Float({ p, className, range }) {
   const ref = useRef(null)
@@ -21,6 +23,22 @@ function Float({ p, className, range }) {
 }
 
 export default function About() {
+  const artRef = useRef(null)
+  const [anchorRatio, setAnchorRatio] = useState(0.76)
+
+  useEffect(() => {
+    const updateAnchor = () => {
+      if (artRef.current) {
+        const rect = artRef.current.getBoundingClientRect()
+        const ratio = (rect.left + rect.width / 2) / window.innerWidth
+        setAnchorRatio(Math.min(0.85, Math.max(0.15, ratio)))
+      }
+    }
+    updateAnchor()
+    window.addEventListener('resize', updateAnchor)
+    return () => window.removeEventListener('resize', updateAnchor)
+  }, [])
+
   const aboutImage = allItems.find(
     (item) => item.file === 'IMG_6884_SnapseedCopy_SnapseedCopy.jpg'
   )
@@ -39,6 +57,14 @@ export default function About() {
   return (
     <article className="view about">
       <ApertureDial />
+      <div className="about-lanyard-stage">
+        <Lanyard
+          frontImage={aboutImage?.src || '/card-front.png'}
+          backImage={aboutImage?.src || '/card-back.png'}
+          strapImage="/band.png"
+          anchor={anchorRatio}
+        />
+      </div>
       <p className="crumb">About</p>
       <div className="ab">
         <div className="ab-text">
@@ -49,11 +75,7 @@ export default function About() {
           </h1>
           <FadeUp as="p" className="lead" delay={0.3}>{site.about}</FadeUp>
         </div>
-        {aboutImage && (
-          <div className="ab-art" aria-hidden="true">
-            <Float p={aboutImage} className="about-feature" range={['6%', '-10%']} />
-          </div>
-        )}
+        <div ref={artRef} className="ab-art about-lanyard-placeholder" aria-hidden="true" />
         {featuredSeries && (
           <FadeUp delay={0.4} className="about-widgets-wrap">
             <section className="about-widgets" aria-label="Photography widgets">
@@ -90,14 +112,6 @@ export default function About() {
         )}
       </div>
 
-      <div className="marq" aria-hidden="true">
-        <div className="marq-track">
-          {[...words, ...words, ...words, ...words].map((w, i) => (
-            <span key={i}>{w}</span>
-          ))}
-        </div>
-      </div>
-
       <section className="resume" aria-labelledby="resume-title">
         <div>
           <p className="resume-label">A little more on paper</p>
@@ -109,6 +123,27 @@ export default function About() {
           <a href="/Resume.pdf" download="Adharsh-CS-Resume.pdf">Download PDF <span aria-hidden="true">↓</span></a>
         </div>
       </section>
+
+      <div className="about-curved-loop">
+        <CurvedLoop
+          marqueeText="Engineering ✦ Design ✦ Video ✦ Photography ✦"
+          shape="arc"
+          speed={2}
+          curveAmount={0}
+          direction="left"
+          fontSize={96}
+          fontWeight={700}
+          letterSpacing={0}
+          separator=""
+          outline={false}
+          scrollBoost={0}
+          edgeFade={0}
+          interactive={true}
+          pauseOnHover={false}
+          separatorColor={null}
+          color={null}
+        />
+      </div>
 
       <SayHello />
     </article>

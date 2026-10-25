@@ -6,6 +6,7 @@ import { site } from '../data/site'
 import './CameraHero.css'
 
 gsap.registerPlugin(ScrollTrigger)
+ScrollTrigger.config({ ignoreMobileResize: true })
 
 const FSTOPS = ['1.4', '2', '2.8', '4', '5.6', '8', '11', '16']
 const PI = Math.PI
@@ -17,13 +18,13 @@ const POSES = {
     { x: 0,    y: 0,   z: 0, rotX: 0.12, rotY: 0.35,     scale: 1,   ring: 0 },    // hero
     { x: -2.9, y: 0,   z: 0, rotX: 0.05, rotY: PI * 0.9, scale: 1,   ring: 2 },    // archive
     { x: 2.9,  y: 0,   z: 0, rotX: 0.1,  rotY: PI * 1.7, scale: 1,   ring: 4 },    // about
-    { x: 0,    y: 0.3, z: 1, rotX: 0,    rotY: PI * 2,   scale: 1.5, ring: 6.28 }, // contact (lens faces you)
+    { x: 0,    y: 1.25, z: 0, rotX: 0,    rotY: PI * 2,   scale: 0.78, ring: 6.28 }, // contact (lens faces you)
   ],
   tall: [
-    { x: 0, y: 0,   z: 0, rotX: 0.12, rotY: 0.35,     scale: 0.8,  ring: 0 },
-    { x: 0, y: 1.5, z: 0, rotX: 0.05, rotY: PI * 0.9, scale: 0.7,  ring: 2 },
-    { x: 0, y: 1.5, z: 0, rotX: 0.1,  rotY: PI * 1.7, scale: 0.7,  ring: 4 },
-    { x: 0, y: 0.6, z: 0, rotX: 0,    rotY: PI * 2,   scale: 0.95, ring: 6.28 },
+    { x: 0, y: 0,    z: 0, rotX: 0.12, rotY: 0.35,     scale: 0.82, ring: 0 },    // hero
+    { x: 0, y: 1.45, z: 0, rotX: 0.05, rotY: PI * 0.9, scale: 0.72, ring: 2 },    // archive
+    { x: 0, y: 1.45, z: 0, rotX: 0.1,  rotY: PI * 1.7, scale: 0.72, ring: 4 },    // about
+    { x: 0, y: 1.2,  z: 0, rotX: 0,    rotY: PI * 2,   scale: 0.78, ring: 6.28 }, // contact
   ],
 }
 
@@ -85,7 +86,11 @@ export default function CameraHero({
       const initScroll = () => {
         if (scrollInitialized) return
         scrollInitialized = true
-        mm.add({ wide: '(min-aspect-ratio: 1/1)', tall: '(max-aspect-ratio: 99/100)' }, (c) => {
+        const isTouch = window.matchMedia('(pointer: coarse)').matches
+        mm.add({
+          wide: '(min-width: 821px) and (min-aspect-ratio: 1/1)',
+          tall: '(max-width: 820px), (max-aspect-ratio: 1/1)',
+        }, (c) => {
           const P = c.conditions.wide ? POSES.wide : POSES.tall
           gsap.set(scene.state.scroll, P[0])
           const tl = gsap.timeline({
@@ -94,12 +99,29 @@ export default function CameraHero({
               trigger: '.ch-main',
               start: 'top top',
               end: 'bottom bottom',
-              scrub: 1.2,
+              scrub: isTouch ? 0.8 : 1.2,
               onUpdate: (self) => { scene.state.vel = self.getVelocity() },
             },
           })
           P.slice(1).forEach((pose) => tl.to(scene.state.scroll, pose))
         })
+
+        // hero text fades out upward as user scrolls away
+        gsap.fromTo('.ch-hero__meta, .ch-hero__scroll',
+          { opacity: 1, y: 0 },
+          {
+            opacity: 0,
+            y: -40,
+            ease: 'none',
+            scrollTrigger: {
+              trigger: '.ch-hero',
+              start: 'top top',
+              end: '30% top',
+              scrub: 0.4,
+              invalidateOnRefresh: true,
+            },
+          }
+        )
 
         // copy reveals
         gsap.utils.toArray('.ch-reveal').forEach((el) => {
@@ -240,10 +262,6 @@ export default function CameraHero({
             <span className="ch-kicker">03 — Contact</span>
             <h2>Let's make something.</h2>
             <a className="ch-cta" href={`mailto:${site.email}`}>Say hello</a>
-            <div className="ch-socials">
-              <a href={site.instagram} target="_blank" rel="noreferrer">Instagram</a>
-              <a href={site.behance} target="_blank" rel="noreferrer">Behance</a>
-            </div>
           </div>
         </section>
       </main>

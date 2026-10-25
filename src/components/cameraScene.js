@@ -41,8 +41,11 @@ export function createCameraScene(canvas, { modelUrl, onProgress } = {}) {
     vel: 0,
   }
 
+  const isTouchDevice = () => window.matchMedia('(pointer: coarse)').matches || window.innerWidth < 820
+  const getPixelRatio = () => Math.min(window.devicePixelRatio || 1, isTouchDevice() ? 1.75 : 2)
+
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true, powerPreference: 'high-performance' })
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  renderer.setPixelRatio(getPixelRatio())
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.toneMapping = THREE.ACESFilmicToneMapping
   renderer.toneMappingExposure = 1.1
@@ -62,7 +65,7 @@ export function createCameraScene(canvas, { modelUrl, onProgress } = {}) {
 
   /* iris backdrop */
   const iris = new THREE.Mesh(
-    new THREE.PlaneGeometry(13, 13),
+    new THREE.PlaneGeometry(16, 16),
     new THREE.ShaderMaterial({
       vertexShader: IRIS_VERT,
       fragmentShader: IRIS_FRAG,
@@ -111,9 +114,10 @@ export function createCameraScene(canvas, { modelUrl, onProgress } = {}) {
       return gltf
     })
 
-  /* pointer parallax */
+  /* pointer parallax: only track mouse/fine pointer, ignore touch drag to avoid jarring tilts while scrolling */
   const mouse = { x: 0, y: 0, tx: 0, ty: 0 }
   const onMove = (e) => {
+    if (e.pointerType === 'touch') return
     mouse.tx = (e.clientX / window.innerWidth - 0.5) * 2
     mouse.ty = (e.clientY / window.innerHeight - 0.5) * 2
   }
@@ -122,9 +126,11 @@ export function createCameraScene(canvas, { modelUrl, onProgress } = {}) {
   /* sizing */
   const resize = () => {
     const w = window.innerWidth, h = window.innerHeight
+    renderer.setPixelRatio(getPixelRatio())
     renderer.setSize(w, h, false)
     camera.aspect = w / h
-    camera.fov = w / h < 1 ? 46 : 35
+    // Narrow mobile screens (e.g. 19.5:9 aspect) need slightly wider FOV so the camera is fully framed
+    camera.fov = w / h < 0.65 ? 50 : w / h < 1 ? 46 : 35
     camera.updateProjectionMatrix()
   }
   resize()
@@ -149,12 +155,16 @@ export function createCameraScene(canvas, { modelUrl, onProgress } = {}) {
     iris.material.uniforms.uRot.value = s.ring + t * 0.03
     iris.material.uniforms.uOpacity.value = i.iris * 0.55
     iris.position.x = s.x * 0.6
-    iris.position.y = s.y * 0.6
+    iris.position.y = s.y * 0.15
 
     // follow the site's ink colour so the aperture dial / theme toggle recolours the iris
     if (++frame % 12 === 0) {
-      const v = rootStyle.getPropertyValue('--fg').trim()
-      if (v) { try { iris.material.uniforms.uColor.value.set(v) } catch { /* ignore */ } }
+      const v = (rootStyle.getPropertyValue('--ink') || rootStyle.getPropertyValue('--fg')).trim()
+      if (v) {
+        try {
+          iris.material.uniforms.uColor.value.set(v)
+        } catch { /* ignore */ }
+      }
     }
 
     renderer.render(scene, camera)

@@ -6,7 +6,7 @@ const F_MIN = 1.4
 const F_MAX = 16
 const STEPS = 21
 const LIGHT = [243, 240, 234]
-const DARK = [10, 10, 11]
+const DARK = [0, 0, 0]
 const FG_LIGHT = [242, 240, 235]
 const FG_DARK = [17, 17, 17]
 
