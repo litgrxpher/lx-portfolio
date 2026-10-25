@@ -9,6 +9,7 @@ import { allItems, series } from '../data/series'
 import { site } from '../data/site'
 import { sound } from '../utils/soundEngine'
 import TearTicket from '../components/TearTicket/TearTicket'
+import LoaderParticles from '../components/LoaderParticles'
 import './Home.css'
 
 gsap.registerPlugin(ScrollTrigger)
@@ -84,6 +85,7 @@ const atmosphereMaterial = () =>
         gl_FragColor = vec4(vec3(0.36, 0.62, 1.0) * f * 1.25, f);
       }`,
   })
+
 
 // Swap in the high-res maps and tune the three spheres inside the model:
 // surface (phong1), clouds (lambert6) and atmosphere (lambert7). Returns the cloud meshes.
@@ -201,12 +203,16 @@ export default function Home() {
   const canvasHostRef = useRef(null)
   const scrollRef = useRef(null)
   const loaderRef = useRef(null)
+  const loaderTopRef = useRef(null)
+  const ticketWrapRef = useRef(null)
   const countRef = useRef(null)
+  const loaderBottomRef = useRef(null)
   const altRef = useRef(null)
   const placeRef = useRef(null)
   const lenisRef = useRef(null)
   const state = useRef({ t: 0, dive: 0, intro: shouldSkipIntro ? 0 : 1, leaving: false })
-  const [soundEnabled, setSoundEnabled] = useState(false)
+  const [soundEnabled, setSoundEnabled] = useState(sound.enabled)
+  const [loaderActive, setLoaderActive] = useState(!shouldSkipIntro)
   const [isMobile, setIsMobile] = useState(
     typeof window !== 'undefined' ? window.innerWidth <= 640 : false
   )
@@ -215,6 +221,12 @@ export default function Home() {
   const assetsReadyRef = useRef(false)
 
   const photoCount = useMemo(() => allItems.filter((i) => i.type === 'image').length, [])
+
+  useEffect(() => {
+    return sound.subscribe((enabled) => {
+      setSoundEnabled(enabled)
+    })
+  }, [])
 
   useEffect(() => {
     const handleResize = () => {
@@ -279,7 +291,7 @@ export default function Home() {
 
     const scene = new THREE.Scene()
     const camera = new THREE.PerspectiveCamera(
-      window.innerWidth / window.innerHeight < 1 ? 52 : 42,
+      window.innerWidth / window.innerHeight < 1 ? 50 : 42,
       1,
       0.1,
       1000
@@ -336,27 +348,15 @@ export default function Home() {
       }))
     }
 
-    let lastW = typeof window !== 'undefined' ? window.innerWidth : 1200
-    let lastH = typeof window !== 'undefined' ? window.innerHeight : 800
-
     const resize = () => {
       const w = window.innerWidth
       const h = window.innerHeight
-      const isMobileScreen = w <= 768
-
-      // On mobile devices, ignore vertical-only toolbar collapse/expand (height changes < 160px)
-      // to prevent the 3D model from stretching, shrinking, or jittering while scrolling.
-      if (isMobileScreen && w === lastW && Math.abs(h - lastH) < 160) {
-        return
-      }
-      lastW = w
-      lastH = h
 
       const aspect = w / h
       camera.aspect = aspect
-      camera.fov = aspect < 1 ? Math.min(52, 42 / Math.pow(aspect, 0.35)) : 42
+      camera.fov = aspect < 1 ? 50 : 42
       camera.updateProjectionMatrix()
-      renderer?.setSize(w, h, false)
+      renderer?.setSize(w, h, true)
     }
     resize()
     window.addEventListener('resize', resize)
@@ -371,6 +371,8 @@ export default function Home() {
       }
     }
     syncTheme()
+    const themeObserver = new MutationObserver(syncTheme)
+    themeObserver.observe(html, { attributes: true, attributeFilter: ['style', 'data-theme'] })
 
     // pointer parallax
     const mouse = { x: 0, y: 0, sx: 0, sy: 0 }
@@ -415,7 +417,6 @@ export default function Home() {
 
       const dt = Math.min(0.05, time - lastTime)
       lastTime = time
-      if (++frame % 20 === 0) syncTheme()
 
       mouse.sx += (mouse.x - mouse.sx) * 0.05
       mouse.sy += (mouse.y - mouse.sy) * 0.05
@@ -438,10 +439,8 @@ export default function Home() {
         const currentLook = THREE.MathUtils.lerp(a.look, b.look, u)
 
         // Single stable mobile distance factor based on viewport aspect ratio
-        // Avoids jumping, ballooning, or sudden zoom shifts between stops
-        const mobileDistFactor = isPortrait
-          ? Math.min(1.58, 0.98 / Math.pow(aspect, 0.65))
-          : 1
+        // Stable mobile distance factor decoupled from dynamic aspect changes
+        const mobileDistFactor = isPortrait ? 1.42 : 1
 
         // Smooth flight between stops without erratic sine bouncing on mobile
         const flyArc = isPortrait ? 0.04 : 0.25
@@ -462,7 +461,7 @@ export default function Home() {
         // diving into the globe when a link is clicked
         if (s.dive > 0) {
           camera.position.lerp(target, s.dive * 0.5)
-          camera.fov = (isPortrait ? 52 : 42) + s.dive * 28
+          camera.fov = (isPortrait ? 50 : 42) + s.dive * 28
           camera.updateProjectionMatrix()
         }
         camera.lookAt(target)
@@ -503,6 +502,7 @@ export default function Home() {
         sound.modulate(scrollSpeed, alt / 8849)
       }
 
+
       // the cloud layer drifts slowly around the polar axis
       clouds.forEach((c) => c.rotateOnWorldAxis(Y, dt * 0.006))
       stars.rotation.y = time * 0.004
@@ -510,13 +510,13 @@ export default function Home() {
       renderer.render(scene, camera)
     }
     gsap.ticker.add(tick)
-    gsap.ticker.lagSmoothing(0)
+    gsap.ticker.lagSmoothing(500, 33)
 
     // ---------- scroll choreography (GSAP) ----------
     const ctx = gsap.context(() => {
       gsap.set('.mtn-chap [data-r], .mtn-end [data-r]', { opacity: 0, y: 50 })
 
-      // camera progress follows the scroll position
+      // camera progress follows the scroll position smoothly without trailing delay
       gsap.to(s, {
         t: 1,
         ease: 'none',
@@ -524,8 +524,8 @@ export default function Home() {
           trigger: scrollRef.current,
           start: 'top top',
           endTrigger: '.mtn-end',
-          end: 'top 35%',
-          scrub: 0.25,
+          end: 'bottom bottom',
+          scrub: 0.08,
         },
       })
 
@@ -534,9 +534,9 @@ export default function Home() {
         gsap.to(el.querySelectorAll('[data-r]'), {
           opacity: 1,
           y: 0,
-          duration: 1,
+          duration: 0.85,
           ease: 'power3.out',
-          stagger: 0.09,
+          stagger: 0.08,
           scrollTrigger: {
             trigger: el,
             start: 'top 62%',
@@ -554,7 +554,7 @@ export default function Home() {
         })
       })
 
-      // Base camp links rise in as the scroll reaches the very bottom and stays settled
+      // Base camp links rise in as the scroll reaches base camp
       gsap.to('.mtn-end [data-r]', {
         opacity: 1,
         y: 0,
@@ -563,7 +563,7 @@ export default function Home() {
         stagger: 0.1,
         scrollTrigger: {
           trigger: '.mtn-end',
-          start: 'top 70%',
+          start: 'top 55%',
           end: 'bottom bottom',
           toggleActions: 'play none none reverse',
           onEnter: () => {
@@ -576,40 +576,116 @@ export default function Home() {
         },
       })
 
-      // hero fades as you start travelling
+      // hero fades as you start travelling - early fade so it never collides with fixed header
       gsap.to('.mtn-hero-inner', {
         opacity: 0,
-        y: -40,
+        y: -30,
         ease: 'power1.out',
-        scrollTrigger: { trigger: '.mtn-hero', start: 'top top', end: '30% top', scrub: true },
+        scrollTrigger: { trigger: '.mtn-hero', start: 'top top', end: '18% top', scrub: true },
       })
     }, scrollRef)
 
     // ---------- intro: loader -> hero ----------
+    let hasFinished = false
     const finishLoading = () => {
-      if (disposed) return
+      if (disposed || hasFinished) return
+      hasFinished = true
+
       html.classList.remove('loader-active')
       html.style.overflow = ''
       ScrollTrigger.refresh()
-      const tl = gsap.timeline()
-      tl.to(countRef.current, { opacity: 0, duration: 0.3 })
-        .to(loaderRef.current, { yPercent: -100, duration: 1.1, ease: 'power4.inOut' }, '>-0.05')
-        // the camera glides in from far away while the loader lifts
-        .to(s, { intro: 0, duration: 3, ease: 'power3.out' }, '<')
-        .fromTo(
-          '.mtn-line > span',
-          { y: '110%' },
-          { y: '0%', duration: 1.2, ease: 'power4.out', stagger: 0.12 },
-          '-=0.45'
+
+      if (loaderRef.current) {
+        loaderRef.current.style.pointerEvents = 'none'
+      }
+
+      if (reduce) {
+        s.intro = 0
+        setLoaderActive(false)
+        if (loaderRef.current) loaderRef.current.style.display = 'none'
+        gsap.set('.mtn-line > span', { y: '0%' })
+        gsap.set('.mtn-hero [data-intro]', { opacity: 1, y: 0 })
+        lenis?.start()
+        return
+      }
+
+      const tl = gsap.timeline({
+        onComplete: () => {
+          setLoaderActive(false)
+          if (loaderRef.current) {
+            loaderRef.current.style.display = 'none'
+          }
+        },
+      })
+
+      // 1. If bottom loading indicator is still visible, fade it out quickly
+      if (loaderBottomRef.current) {
+        tl.to(loaderBottomRef.current, { opacity: 0, y: 10, duration: 0.35, ease: 'power2.out' }, 0)
+      }
+
+      // 2. Float and gently fade top bar
+      if (loaderTopRef.current) {
+        tl.to(loaderTopRef.current, { opacity: 0, y: -16, duration: 0.6, ease: 'power2.out' }, 0.05)
+      }
+
+      // 3. Cinematic ticket dissolve & expansion:
+      // The torn ticket piece gently glides forward and slightly up, then dissolves into the atmosphere
+      if (ticketWrapRef.current) {
+        tl.to(
+          ticketWrapRef.current,
+          {
+            scale: 1.08,
+            y: -14,
+            opacity: 0,
+            filter: 'blur(16px)',
+            duration: 0.95,
+            ease: 'power2.inOut',
+          },
+          0
         )
-        .fromTo(
-          '.mtn-hero [data-intro]',
-          { opacity: 0, y: 24 },
-          { opacity: 1, y: 0, duration: 0.9, ease: 'power3.out', stagger: 0.1 },
-          '-=0.8'
+      }
+
+      // 4. The dark loader backdrop dissolves into the starry 3D universe:
+      // Smooth opacity fadeout reveals the illuminated Earth globe behind it seamlessly
+      if (loaderRef.current) {
+        tl.to(
+          loaderRef.current,
+          {
+            opacity: 0,
+            scale: 1.03,
+            duration: 1.25,
+            ease: 'power2.inOut',
+          },
+          0.12
         )
-        .add(() => lenis?.start(), '-=0.6')
-        .set(loaderRef.current, { display: 'none' })
+      }
+
+      // 5. Camera glides in from deep space toward Western Ghats
+      tl.to(s, { intro: 0, duration: 2.8, ease: 'power3.out' }, 0.1)
+
+      // 6. Hero typography gracefully emerges from behind its masks
+      tl.fromTo(
+        '.mtn-line > span',
+        { y: '115%' },
+        { y: '0%', duration: 1.25, ease: 'power4.out', stagger: 0.12 },
+        0.55
+      )
+      .fromTo(
+        '.mtn-hero [data-intro]',
+        { opacity: 0, y: 22 },
+        { opacity: 1, y: 0, duration: 1.0, ease: 'power3.out', stagger: 0.08 },
+        0.75
+      )
+      .fromTo(
+        '.mtn-hud',
+        { opacity: 0, y: 12 },
+        { opacity: 1, y: 0, duration: 0.8, ease: 'power2.out' },
+        0.9
+      )
+      .add(() => {
+        lenis?.start()
+        ScrollTrigger.refresh()
+      }, 0.9)
     }
     finishLoadingRef.current = finishLoading
 
@@ -706,6 +782,18 @@ export default function Home() {
             onUpdate: () => setCount(countObj.v),
             onComplete: () => {
               assetsReadyRef.current = true
+              // Once progress loading reaches 100, let it fade out and disappear
+              if (loaderBottomRef.current) {
+                gsap.to(loaderBottomRef.current, {
+                  opacity: 0,
+                  duration: 0.6,
+                  delay: 0.25,
+                  ease: 'power2.out',
+                  onComplete: () => {
+                    if (loaderBottomRef.current) loaderBottomRef.current.style.visibility = 'hidden'
+                  },
+                })
+              }
               if (!shouldSkipIntro && ticketTornRef.current && finishLoadingRef.current) {
                 finishLoadingRef.current()
               } else if (shouldSkipIntro) {
@@ -732,6 +820,7 @@ export default function Home() {
     // ---------- cleanup ----------
     return () => {
       disposed = true
+      themeObserver?.disconnect()
       window.removeEventListener('resize', resize)
       window.removeEventListener('pointermove', onPointer)
       gsap.ticker.remove(tick)
@@ -755,7 +844,7 @@ export default function Home() {
       })
       renderer?.dispose()
       canvas.remove()
-      sound.destroy()
+      // Do not destroy sound engine so background audio seamlessly continues across pages
     }
   }, [])
 
@@ -771,6 +860,7 @@ export default function Home() {
     } catch {
       /* ignore */
     }
+    sound.unlock()
     sound.playWhoosh(1)
     sound.playClick(1.2)
     if (finishLoadingRef.current) {
@@ -811,7 +901,9 @@ export default function Home() {
         role="status"
         style={shouldSkipIntro ? { display: 'none' } : undefined}
       >
-        <div className="mtn-loader-top">
+        <LoaderParticles active={loaderActive} />
+
+        <div ref={loaderTopRef} className="mtn-loader-top">
           <div className="mtn-loader-tag">
             <span>{site.name}</span>
             <span className="mtn-loader-dot" />
@@ -844,19 +936,51 @@ export default function Home() {
           </button>
         </div>
 
-        <div className="mtn-loader-center">
+        <div ref={ticketWrapRef} className="mtn-loader-center">
           <TearTicket
             image="/spectrum.jpg"
             imageAlt="Adharsh CS photography — mountain trail in the mist"
             stub={
               <div className="tt-custom-stub">
-                <h3>Admit One</h3>
-                <p>
-                  Visual Archive
-                  <br />
-                  {series.length} Series · {photoCount} Photos
-                </p>
-                <span>@litgrxpher</span>
+                <div className="tt-stub-top">
+                  <h3>Admit One</h3>
+                  <p>
+                    Visual Archive
+                    <br />
+                    {series.length} Series · {photoCount} Photos
+                  </p>
+                </div>
+                {!isMobile && (
+                  <div className="tt-stub-bottom">
+                    <span>@litgrxpher</span>
+                  </div>
+                )}
+              </div>
+            }
+            stubOverlay={
+              <div className="tt-tear-hint" aria-hidden="true">
+                <div className="tt-gesture-pill">
+                  <span className="tt-gesture-icon">
+                    <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0" />
+                      <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2" />
+                      <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
+                      <path d="M18 8a2 2 0 1 1 4 0v6a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15" />
+                    </svg>
+                    <span className="tt-tap-ping" />
+                  </span>
+                  <span className="tt-gesture-text">Pull to tear</span>
+                  <span className="tt-gesture-arrow">
+                    <svg className="tt-arrow-desktop" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="5" y1="12" x2="19" y2="12" />
+                      <polyline points="12 5 19 12 12 19" />
+                    </svg>
+                    <svg className="tt-arrow-mobile" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+                      <line x1="12" y1="5" x2="12" y2="19" />
+                      <polyline points="19 12 12 19 5 12" />
+                    </svg>
+                  </span>
+                </div>
               </div>
             }
             orientation={isMobile ? 'vertical' : 'horizontal'}
@@ -876,14 +1000,15 @@ export default function Home() {
             resistance={0.45}
             rotate={isMobile ? 0 : 4}
             tilt
-            tiltMax={9}
-            tiltReach={260}
-            parallax={6}
+            tiltMax={isMobile ? 12 : 9}
+            tiltReach={isMobile ? 180 : 260}
+            parallax={isMobile ? 14 : 10}
             perspective={1000}
             background="#27272a"
             color="#f5f5f5"
             border
             borderWidth={1}
+            ariaLabel="Tear your ticket to enter"
             recenter
           >
             <div className="tt-custom-body">
@@ -892,13 +1017,9 @@ export default function Home() {
               <span className="tt-body-sub">Western Ghats · Highland Trails · Kerala</span>
             </div>
           </TearTicket>
-
-          <div className="mtn-ticket-actions">
-            <span className="mtn-ticket-cue">Tear stub to enter</span>
-          </div>
         </div>
 
-        <div className="mtn-loader-bottom">
+        <div ref={loaderBottomRef} className="mtn-loader-bottom">
           <span>Loading the world</span>
           <b ref={countRef}>00</b>
         </div>
@@ -918,18 +1039,18 @@ export default function Home() {
         <section className="mtn-sec mtn-hero">
           <div className="mtn-hero-inner">
             <p className="mtn-eyebrow" data-intro>
-              Western Ghats · Highland Trails · Kerala, India
+              Mountains · Highland Trails · Kerala, India
             </p>
             <h1 className="mtn-title" aria-label="Climb high. Trek far.">
               <span className="mtn-line" aria-hidden="true">
                 <span>Climb high.</span>
               </span>
               <span className="mtn-line" aria-hidden="true">
-                <span>Trek far.</span>
+                <span>Travel far.</span>
               </span>
             </h1>
             <p className="mtn-sub" data-intro>
-              Photographs by {site.name}, from Kerala, India. Documenting high-altitude treks, mist-draped shola ridgelines, and mountain summits across the Western Ghats and beyond.
+              Photographs by {site.name}, from Kerala, India. Documenting mountain treks, mist-draped shola ridgelines, and highland journeys across the Western Ghats and beyond.
             </p>
             <div className="mtn-cue" data-intro>
               <i /> Scroll to explore the trails
@@ -937,52 +1058,52 @@ export default function Home() {
           </div>
         </section>
 
-        {/* ---- 01 · Alps ---- */}
+        {/* ---- 01 · Shola & Grasslands ---- */}
         <section className="mtn-sec mtn-chap mtn-left">
-          <p className="mtn-num" data-r>01 / Departure · The Alps</p>
+          <p className="mtn-num" data-r>01 / Departure · Shola & Grasslands</p>
           <h2 className="mtn-h2" data-r>
             Every journey starts
             <br />
-            with a packed bag.
+            before the dawn.
           </h2>
           <p className="mtn-p" data-r>
-            A night train, a borrowed map and a ridge on the horizon. The first stop is always the one that teaches you to start early.
+            A packed bag, winding forest tracks, and rolling green ridges emerging through the morning mist. The trail begins where the roads end.
           </p>
         </section>
 
-        {/* ---- 02 · Himalaya ---- */}
+        {/* ---- 02 · Munnar & Pallivasal ---- */}
         <section className="mtn-sec mtn-chap mtn-right">
-          <p className="mtn-num" data-r>02 / Himalaya</p>
+          <p className="mtn-num" data-r>02 / High Ridges · Munnar</p>
           <h2 className="mtn-h2" data-r>
-            Where the world
+            Where emerald hills
             <br />
-            touches the sky.
+            meet the sky.
           </h2>
           <p className="mtn-p" data-r>
-            Prayer flags, thin air and the long walk to base camp. You stop counting kilometres and start counting breaths.
+            First light spilling over Ghats, where wild blooms carpet the ridges and clouds drift just out of reach. You stop counting hours and watch the light shift.
           </p>
         </section>
 
-        {/* ---- 03 · Andes ---- */}
+        {/* ---- 03 · Offroad Passes ---- */}
         <section className="mtn-sec mtn-chap mtn-left">
-          <p className="mtn-num" data-r>03 / The Andes</p>
+          <p className="mtn-num" data-r>03 / Offroad Passes · The Forest Edge</p>
           <h2 className="mtn-h2" data-r>
-            Long roads,
+            Rutted trails,
             <br />
-            high passes.
+            quiet passes.
           </h2>
           <p className="mtn-p" data-r>
-            Dusty buses, border queues and a ridgeline that never seems to get closer. Until, suddenly, it does.
+            Dusty jeep tracks and silent pine roads winding into Kodaikanal blue. Routes where you trade speed for perspective.
           </p>
         </section>
 
         {/* ---- 04 · Summit ---- */}
         <section className="mtn-sec mtn-chap mtn-right">
-          <p className="mtn-num" data-r>04 / Summit</p>
+          <p className="mtn-num" data-r>04 / The Summit · Above the Mist</p>
           <h2 className="mtn-h2" data-r>
             Proof that
             <br />
-            it was worth it.
+            the climb was worth it.
           </h2>
           <div className="mtn-stats" data-r>
             <div>

@@ -75,6 +75,7 @@ const buildGeometry = (W, H, S, R, holes, hole, notch, rough, vertical) => {
 export default function TearTicket({
   children = null,
   stub = null,
+  stubOverlay = null,
   image = '',
   imageAlt = '',
   scrim = true,
@@ -108,7 +109,7 @@ export default function TearTicket({
   stubBackground = '',
   recenter = true,
   disabled = false,
-  ariaLabel = 'Tear off the stub',
+  ariaLabel = 'Tear your ticket to enter',
   className = ''
 }) {
   const reduce = useReducedMotion();
@@ -490,17 +491,115 @@ export default function TearTicket({
 
   useEffect(() => {
     if (!tilt || reduce || disabled) return undefined;
-    const move = e => {
+
+    let animId = null;
+    let isUserActive = false;
+    let lastActiveTime = 0;
+
+    const updateTilt = (clientX, clientY) => {
       const el = rootRef.current;
-      if (!el || e.pointerType === 'touch' || sim.current.id !== null) return;
+      if (!el || sim.current.id !== null) return;
       const r = el.getBoundingClientRect();
-      const nx = clamp((e.clientX - (r.left + r.width / 2)) / (r.width / 2 + tiltReach), -1, 1);
-      const ny = clamp((e.clientY - (r.top + r.height / 2)) / (r.height / 2 + tiltReach), -1, 1);
+      const nx = clamp((clientX - (r.left + r.width / 2)) / (r.width / 2 + tiltReach), -1, 1);
+      const ny = clamp((clientY - (r.top + r.height / 2)) / (r.height / 2 + tiltReach), -1, 1);
       tiltY.set(nx * tiltMax);
       tiltX.set(-ny * tiltMax);
     };
-    window.addEventListener('pointermove', move);
-    return () => window.removeEventListener('pointermove', move);
+
+    const onPointerMove = e => {
+      if (sim.current.id !== null) return;
+      if (e.pointerType === 'mouse') {
+        isUserActive = true;
+        lastActiveTime = performance.now();
+        updateTilt(e.clientX, e.clientY);
+      }
+    };
+
+    const onPointerLeave = () => {
+      isUserActive = false;
+      lastActiveTime = performance.now();
+    };
+
+    const onTouchStart = e => {
+      if (sim.current.id !== null || !e.touches || !e.touches[0]) return;
+      isUserActive = true;
+      lastActiveTime = performance.now();
+      updateTilt(e.touches[0].clientX, e.touches[0].clientY);
+    };
+
+    const onTouchMove = e => {
+      if (sim.current.id !== null || !e.touches || !e.touches[0]) return;
+      isUserActive = true;
+      lastActiveTime = performance.now();
+      updateTilt(e.touches[0].clientX, e.touches[0].clientY);
+    };
+
+    const onTouchEnd = () => {
+      isUserActive = false;
+      lastActiveTime = performance.now();
+    };
+
+    // Mobile device orientation / gyroscope holographic parallax
+    const onOrientation = e => {
+      if (sim.current.id !== null) return;
+      const gamma = e.gamma; // left-to-right [-90, 90]
+      const beta = e.beta;   // front-to-back [-180, 180]
+      if (gamma === null || beta === null) return;
+
+      // Typical phone holding pitch is ~45deg
+      const nx = clamp(gamma / 20, -1, 1);
+      const ny = clamp((beta - 45) / 20, -1, 1);
+      isUserActive = true;
+      lastActiveTime = performance.now();
+      tiltY.set(nx * tiltMax);
+      tiltX.set(-ny * tiltMax);
+    };
+
+    // Ambient floating 3D parallax drift when user is not actively interacting
+    const ambientLoop = now => {
+      if (sim.current.id === null) {
+        const timeSinceActive = now - lastActiveTime;
+        if (!isUserActive && timeSinceActive > 600) {
+          const t = now * 0.001;
+          // Organic Lissajous figure for natural breathing 3D float
+          const ambX = Math.sin(t * 1.5) * (tiltMax * 0.55) + Math.cos(t * 0.8) * (tiltMax * 0.2);
+          const ambY = Math.cos(t * 1.2) * (tiltMax * 0.65) + Math.sin(t * 0.6) * (tiltMax * 0.2);
+
+          tiltX.set(-ambX);
+          tiltY.set(ambY);
+        } else if (isUserActive && timeSinceActive > 1800) {
+          // If no new touch/gyro input for 1.8s, smoothly ease back to ambient float
+          isUserActive = false;
+        }
+      }
+      animId = requestAnimationFrame(ambientLoop);
+    };
+
+    animId = requestAnimationFrame(ambientLoop);
+
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    window.addEventListener('pointerleave', onPointerLeave, { passive: true });
+    window.addEventListener('touchstart', onTouchStart, { passive: true });
+    window.addEventListener('touchmove', onTouchMove, { passive: true });
+    window.addEventListener('touchend', onTouchEnd, { passive: true });
+    window.addEventListener('touchcancel', onTouchEnd, { passive: true });
+
+    if (typeof window !== 'undefined' && window.DeviceOrientationEvent) {
+      window.addEventListener('deviceorientation', onOrientation, { passive: true });
+    }
+
+    return () => {
+      if (animId) cancelAnimationFrame(animId);
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerleave', onPointerLeave);
+      window.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
+      window.removeEventListener('touchcancel', onTouchEnd);
+      if (typeof window !== 'undefined' && window.DeviceOrientationEvent) {
+        window.removeEventListener('deviceorientation', onOrientation);
+      }
+    };
   }, [tilt, reduce, disabled, tiltMax, tiltReach, tiltX, tiltY]);
 
   return (
@@ -598,6 +697,11 @@ export default function TearTicket({
             <div className="tear-ticket__paper tear-ticket__paper--stub" style={{ clipPath: `path('${geo.stub}')` }}>
               <div className="tear-ticket__stub">{stub}</div>
             </div>
+            {stubOverlay ? (
+              <div className="tear-ticket__stub-overlay" aria-hidden="true">
+                {stubOverlay}
+              </div>
+            ) : null}
           </div>
         </motion.div>
       </div>

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { sound } from '../utils/soundEngine'
 import './ApertureDial.css'
 
 const C = 100
@@ -70,7 +71,10 @@ export default function ApertureDial() {
   useEffect(() => {
     applyTheme(value)
     const stop = Math.floor(value * 7)
-    if (lastStop.current !== -1 && stop !== lastStop.current) navigator.vibrate?.(8)
+    if (lastStop.current !== -1 && stop !== lastStop.current) {
+      navigator.vibrate?.(8)
+      if (sound.enabled) sound.playUiClick('tick')
+    }
     lastStop.current = stop
   }, [value])
 

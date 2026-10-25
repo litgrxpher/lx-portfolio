@@ -22,6 +22,7 @@
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   -webkit-tap-highlight-color: transparent;
+  touch-action: none;
 }
 
 .tear-ticket[data-disabled] {
@@ -159,6 +160,20 @@
   width: var(--tt-stub);
 }
 
+.tear-ticket__stub-overlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: var(--tt-stub);
+  pointer-events: none;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: visible;
+}
+
 .tear-ticket[data-orientation='vertical'] .tear-ticket__content {
   bottom: auto;
   width: 100%;
@@ -166,6 +181,13 @@
 }
 
 .tear-ticket[data-orientation='vertical'] .tear-ticket__stub {
+  top: auto;
+  left: 0;
+  width: auto;
+  height: var(--tt-stub);
+}
+
+.tear-ticket[data-orientation='vertical'] .tear-ticket__stub-overlay {
   top: auto;
   left: 0;
   width: auto;
