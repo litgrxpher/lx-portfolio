@@ -41,7 +41,6 @@ export default function App() {
   return (
     <>
       <SmoothScroll />
-      <Cursor />
       <ScrollProgress />
       <Header />
       <AnimatePresence mode="wait" initial={false}>
@@ -55,6 +54,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AnimatePresence>
+      <Cursor />
     </>
   )
 }

@@ -52,12 +52,33 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 *, *::before, *::after { box-sizing: border-box; }
-html { height: 100%; -webkit-text-size-adjust: 100%; overscroll-behavior-y: none; }
+html {
+  height: 100%;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  overscroll-behavior-y: none;
+}
 body {
-  margin: 0; min-height: 100%; background: var(--bg); color: var(--ink);
-  font-family: var(--ui); font-size: 17px; line-height: 1.4; -webkit-font-smoothing: antialiased;
+  margin: 0;
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+  min-height: 100%;
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--ui);
+  font-size: 17px;
+  line-height: 1.4;
+  -webkit-font-smoothing: antialiased;
   transition: background-color 0.2s ease, color 0.2s ease;
   overscroll-behavior-y: none;
+}
+#root, .page {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 a { color: inherit; text-decoration: none; }
 button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; }
@@ -72,12 +93,50 @@ html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-stopped { overflow: hidden; }
 
 /* ===== Cursor ===== */
-html.has-cursor, html.has-cursor * { cursor: none !important; }
-.cursor-dot {
-  position: fixed; left: 0; top: 0; z-index: 100; pointer-events: none; border-radius: 50%;
-  width: 6px; height: 6px; margin: -3px 0 0 -3px; background: var(--ink);
+html.has-cursor:not(.loader-active),
+html.has-cursor:not(.loader-active) *:not(.mtn-loader):not(.mtn-loader *) {
+  cursor: none !important;
 }
-html:not(.has-cursor) .cursor-dot { display: none; }
+
+html.loader-active,
+html.loader-active * {
+  cursor: auto !important;
+}
+
+html.loader-active button,
+html.loader-active [role="button"],
+html.loader-active a,
+html.loader-active .mtn-loader-sound,
+html.loader-active .mtn-ticket-skip {
+  cursor: pointer !important;
+}
+
+html.loader-active .tear-ticket__paper--stub {
+  cursor: grab !important;
+}
+
+html.loader-active .tear-ticket[data-grabbing] .tear-ticket__paper--stub,
+html.loader-active .tear-ticket__paper--stub:active {
+  cursor: grabbing !important;
+}
+
+.cursor-dot {
+  position: fixed;
+  left: 0;
+  top: 0;
+  z-index: 999999;
+  pointer-events: none;
+  border-radius: 50%;
+  width: 6px;
+  height: 6px;
+  margin: -3px 0 0 -3px;
+  background: var(--ink);
+}
+
+html:not(.has-cursor) .cursor-dot,
+html.loader-active .cursor-dot {
+  display: none !important;
+}
 
 /* ===== Scroll progress ===== */
 .progress { position: fixed; left: 0; right: 0; top: 0; height: 2px; background: var(--ink); transform-origin: 0 50%; z-index: 60; }
@@ -121,7 +180,7 @@ nav .ul { position: absolute; left: 0; right: 0; bottom: 0; height: 1.5px; backg
 }
 
 /* ===== Content pages (about) ===== */
-.view { padding: calc(env(safe-area-inset-top, 0px) + 92px) var(--pad) 0; min-height: 100vh; }
+.view { padding: calc(env(safe-area-inset-top, 0px) + 92px) var(--pad) calc(env(safe-area-inset-bottom, 0px) + clamp(48px, 8vh, 96px)); min-height: 100vh; }
 .about { padding-top: calc(env(safe-area-inset-top, 0px) + 76px); position: relative; }
 .crumb { margin: 28px 0 20px; color: var(--mute); font-size: 16px; }
 .w { display: inline-block; overflow: hidden; vertical-align: top; padding-bottom: 0.14em; margin-bottom: -0.14em; }
@@ -148,6 +207,9 @@ dl.meta dd a { border-bottom: 1px solid var(--ink); margin-right: 10px; }
 .about-stat-widget { display: flex; flex-direction: column; justify-content: space-between; padding: 10px; }
 .about-stat-widget b { font-family: var(--display); font-size: 23px; font-weight: 600; line-height: 1; }
 /* ===== Series index ===== */
+.series-index {
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(96px, 14vh, 180px));
+}
 .series-index-heading { display: flex; justify-content: space-between; align-items: end; gap: 24px; margin-bottom: clamp(32px, 5vw, 64px); }
 .series-index-heading .vtitle { font-size: clamp(56px, 10vw, 144px); line-height: 0.9; }
 .series-index-heading > p { max-width: 28ch; margin: 0 0 8px; color: var(--mute); font-size: clamp(17px, 2vw, 22px); }

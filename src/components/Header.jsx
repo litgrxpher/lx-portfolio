@@ -16,9 +16,22 @@ export default function Header() {
   const inSeries = pathname === '/series' || pathname.startsWith('/series/')
   const inAbout = pathname === '/about'
 
+  const handleBrandClick = (e) => {
+    if (pathname === '/') {
+      e.preventDefault()
+      window.__lenis?.scrollTo(0, { duration: 1.2 })
+    }
+  }
+
   return (
     <header className="top">
-      <Link to="/" className="brand" aria-label={`${site.name}, home`}>
+      <Link
+        to="/"
+        state={{ skipIntro: true }}
+        onClick={handleBrandClick}
+        className="brand"
+        aria-label={`${site.name}, home`}
+      >
         <b className="brand-mark">CS<span className="brand-dot">.</span></b>
       </Link>
       <nav aria-label="Main">

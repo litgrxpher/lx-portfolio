@@ -1159,16 +1159,18 @@ const Lanyard = ({
 
     const toPointer = event => {
       const rect = canvas.getBoundingClientRect();
+      const w = rect.width || 1;
+      const h = rect.height || 1;
       pointer.set(
-        ((event.clientX - rect.left) / rect.width) * 2 - 1,
-        -((event.clientY - rect.top) / rect.height) * 2 + 1
+        ((event.clientX - rect.left) / w) * 2 - 1,
+        -((event.clientY - rect.top) / h) * 2 + 1
       );
       raycaster.setFromCamera(pointer, camera);
     };
 
     const pickCard = () => {
-      cardGroup.updateMatrixWorld();
-      const hits = raycaster.intersectObjects([bodyMesh, frontMesh, backMesh], false);
+      cardGroup.updateMatrixWorld(true);
+      const hits = raycaster.intersectObjects([bodyMesh, frontMesh, backMesh, ring], false);
       return hits[0] || null;
     };
 
@@ -1188,14 +1190,108 @@ const Lanyard = ({
       body.angular.addScaledVector(up, FLIP_SPIN * direction);
     };
 
+    let activeTouchId = null;
+    let activePointerId = null;
+
+    const startGrab = (hit, clientX, clientY) => {
+      sim.grab = {
+        local: hit.point.clone().sub(sim.body.position).applyQuaternion(sim.body.quaternion.clone().invert()),
+        rotation: sim.body.quaternion.clone(),
+        reach: hit.distance,
+        from: hit.point.clone(),
+        target: hit.point.clone()
+      };
+      press = { x: clientX, y: clientY, time: performance.now(), point: hit.point.clone() };
+      canvas.style.pointerEvents = 'auto';
+      setCursor('grabbing');
+      start();
+    };
+
+    const updateGrabTarget = (clientX, clientY) => {
+      if (!sim.grab) return;
+      if (press && Math.hypot(clientX - press.x, clientY - press.y) > 6) {
+        press = null;
+      }
+      toPointer({ clientX, clientY });
+      raycaster.ray.at(sim.grab.reach, sim.grab.target);
+      start();
+    };
+
+    const endGrab = (clientX, clientY, isCancel = false) => {
+      if (!sim.grab) return;
+      if (!isCancel && press && performance.now() - press.time < 450) {
+        flip(press.point);
+      }
+      sim.grab = null;
+      press = null;
+      activeTouchId = null;
+      activePointerId = null;
+      canvas.style.pointerEvents = hovering ? 'auto' : 'none';
+      setCursor(hovering ? 'grab' : '');
+      start();
+    };
+
+    const onWindowTouchStart = event => {
+      if (!alive || !visible || !settingsRef.current.interactive) return;
+      if (sim.grab || event.touches.length !== 1) return;
+      const touch = event.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      if (
+        touch.clientX < rect.left ||
+        touch.clientX > rect.right ||
+        touch.clientY < rect.top ||
+        touch.clientY > rect.bottom
+      ) {
+        return;
+      }
+      toPointer(touch);
+      const hit = pickCard();
+      if (!hit) return;
+
+      if (event.cancelable) event.preventDefault();
+      activeTouchId = touch.identifier;
+      startGrab(hit, touch.clientX, touch.clientY);
+    };
+
+    const onWindowTouchMove = event => {
+      if (!sim.grab || activeTouchId === null) return;
+      const touch = Array.from(event.changedTouches).find(t => t.identifier === activeTouchId);
+      if (!touch) return;
+      if (event.cancelable) event.preventDefault();
+      updateGrabTarget(touch.clientX, touch.clientY);
+    };
+
+    const onWindowTouchEnd = event => {
+      if (!sim.grab) return;
+      const touch = activeTouchId !== null
+        ? Array.from(event.changedTouches).find(t => t.identifier === activeTouchId)
+        : event.changedTouches[0];
+      if (event.cancelable) event.preventDefault();
+      endGrab(touch ? touch.clientX : 0, touch ? touch.clientY : 0, false);
+    };
+
+    const onWindowTouchCancel = () => {
+      if (!sim.grab) return;
+      endGrab(0, 0, true);
+    };
+
     const updatePointerHover = (clientX, clientY) => {
       if (sim.grab) return;
       const rect = canvas.getBoundingClientRect();
-      pointer.set(
-        ((clientX - rect.left) / rect.width) * 2 - 1,
-        -((clientY - rect.top) / rect.height) * 2 + 1
-      );
-      raycaster.setFromCamera(pointer, camera);
+      if (
+        clientX < rect.left ||
+        clientX > rect.right ||
+        clientY < rect.top ||
+        clientY > rect.bottom
+      ) {
+        if (hovering) {
+          hovering = false;
+          if (canvas.style.pointerEvents !== 'none') canvas.style.pointerEvents = 'none';
+          setCursor('');
+        }
+        return;
+      }
+      toPointer({ clientX, clientY });
       const hit = pickCard();
       hovering = !!hit;
       if (hovering) {
@@ -1209,65 +1305,48 @@ const Lanyard = ({
 
     const onWindowPointerMove = event => {
       if (!settingsRef.current.interactive) return;
+      if (activeTouchId !== null) return;
       if (event.pointerType === 'touch') return;
+      if (sim.grab && activePointerId === event.pointerId) {
+        updateGrabTarget(event.clientX, event.clientY);
+        return;
+      }
       updatePointerHover(event.clientX, event.clientY);
     };
 
     const onPointerDown = event => {
       if (!settingsRef.current.interactive || event.button > 0) return;
+      if (activeTouchId !== null || event.pointerType === 'touch') return;
       toPointer(event);
       const hit = pickCard();
       if (!hit) {
         canvas.style.pointerEvents = 'none';
         const el = document.elementFromPoint(event.clientX, event.clientY);
-        canvas.style.pointerEvents = 'auto';
+        canvas.style.pointerEvents = hovering ? 'auto' : 'none';
         if (el && el !== canvas) {
           el.dispatchEvent(new PointerEvent(event.type, event));
         }
         return;
       }
-      sim.grab = {
-        local: hit.point.clone().sub(sim.body.position).applyQuaternion(sim.body.quaternion.clone().invert()),
-        rotation: sim.body.quaternion.clone(),
-        reach: hit.distance,
-        from: hit.point.clone(),
-        target: hit.point.clone()
-      };
-      press = { x: event.clientX, y: event.clientY, time: performance.now(), point: hit.point.clone() };
+      activePointerId = event.pointerId;
+      startGrab(hit, event.clientX, event.clientY);
       canvas.setPointerCapture?.(event.pointerId);
-      setCursor('grabbing');
       event.preventDefault();
-      start();
     };
 
     const onPointerMove = event => {
-      if (!settingsRef.current.interactive) return;
-      toPointer(event);
-      if (sim.grab) {
-        if (press && Math.hypot(event.clientX - press.x, event.clientY - press.y) > 6) press = null;
-        raycaster.ray.at(sim.grab.reach, sim.grab.target);
-        start();
-        return;
+      if (!settingsRef.current.interactive || event.pointerType === 'touch') return;
+      if (sim.grab && activePointerId === event.pointerId) {
+        updateGrabTarget(event.clientX, event.clientY);
       }
-      if (event.pointerType === 'touch') return;
-      hovering = !!pickCard();
-      setCursor(hovering ? 'grab' : '');
     };
 
     const onPointerUp = event => {
-      if (!sim.grab) return;
-      sim.grab = null;
-      if (press && event.type === 'pointerup' && performance.now() - press.time < 450) flip(press.point);
-      press = null;
+      if (event.pointerType === 'touch') return;
+      if (!sim.grab || (activePointerId !== null && activePointerId !== event.pointerId)) return;
       canvas.releasePointerCapture?.(event.pointerId);
+      endGrab(event.clientX, event.clientY, event.type === 'pointercancel');
       updatePointerHover(event.clientX, event.clientY);
-      start();
-    };
-
-    const onTouchStart = event => {
-      if (!settingsRef.current.interactive || event.touches.length !== 1) return;
-      toPointer(event.touches[0]);
-      if (pickCard()) event.preventDefault();
     };
 
     canvas.style.pointerEvents = 'none';
@@ -1277,7 +1356,10 @@ const Lanyard = ({
     canvas.addEventListener('pointerup', onPointerUp);
     canvas.addEventListener('pointercancel', onPointerUp);
     canvas.addEventListener('lostpointercapture', onPointerUp);
-    canvas.addEventListener('touchstart', onTouchStart, { passive: false });
+    window.addEventListener('touchstart', onWindowTouchStart, { passive: false, capture: true });
+    window.addEventListener('touchmove', onWindowTouchMove, { passive: false, capture: true });
+    window.addEventListener('touchend', onWindowTouchEnd, { passive: false, capture: true });
+    window.addEventListener('touchcancel', onWindowTouchCancel, { passive: false, capture: true });
 
     const resize = () => {
       view.width = Math.max(1, container.clientWidth);
@@ -1316,7 +1398,10 @@ const Lanyard = ({
       canvas.removeEventListener('pointerup', onPointerUp);
       canvas.removeEventListener('pointercancel', onPointerUp);
       canvas.removeEventListener('lostpointercapture', onPointerUp);
-      canvas.removeEventListener('touchstart', onTouchStart);
+      window.removeEventListener('touchstart', onWindowTouchStart, { capture: true });
+      window.removeEventListener('touchmove', onWindowTouchMove, { capture: true });
+      window.removeEventListener('touchend', onWindowTouchEnd, { capture: true });
+      window.removeEventListener('touchcancel', onWindowTouchCancel, { capture: true });
       [bodyMesh, frontMesh, backMesh, ring, clampMesh, eyelet, band].forEach(mesh => mesh.geometry?.dispose());
       [frontMaterial, backMaterial, edgeMaterial, metalMaterial, bandMaterial].forEach(material => material.dispose());
       [frontTexture, backTexture, strapTexture, grain, weave].forEach(texture => texture.dispose());

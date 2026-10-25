@@ -41,7 +41,14 @@ for (const path of imagePaths) {
   })
 }
 
-const folders = Object.keys(groups).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
+// Collect all folders from media, images, and info.json
+const folderSet = new Set(Object.keys(groups))
+for (const infoPath of Object.keys(infos)) {
+  const parts = infoPath.split('/')
+  const folder = parts[parts.length - 2]
+  if (folder) folderSet.add(folder)
+}
+const folders = Array.from(folderSet).sort((a, b) => a.localeCompare(b, undefined, { numeric: true }))
 
 export const series = folders.map((folder, si) => {
   const info = infos[`../series/${folder}/info.json`] || {}
