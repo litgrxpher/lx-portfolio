@@ -128,9 +128,16 @@ export function createCameraScene(canvas, { modelUrl, onProgress } = {}) {
     const w = window.innerWidth, h = window.innerHeight
     renderer.setPixelRatio(getPixelRatio())
     renderer.setSize(w, h, false)
-    camera.aspect = w / h
-    // Narrow mobile screens (e.g. 19.5:9 aspect) need slightly wider FOV so the camera is fully framed
-    camera.fov = w / h < 0.65 ? 50 : w / h < 1 ? 46 : 35
+    const aspect = w / h
+    camera.aspect = aspect
+    if (w < 820 || aspect < 1) {
+      // Lock horizontal FOV on mobile so address bar expansion/collapse at top & bottom never shrinks or distorts the 3D camera
+      const targetHFov = 20.8
+      const hFovTan = Math.tan(((targetHFov * Math.PI) / 180) / 2)
+      camera.fov = 2 * Math.atan(hFovTan / aspect) * (180 / Math.PI)
+    } else {
+      camera.fov = 35
+    }
     camera.updateProjectionMatrix()
   }
   resize()
@@ -150,7 +157,8 @@ export function createCameraScene(canvas, { modelUrl, onProgress } = {}) {
 
     rig.position.set(s.x, s.y + Math.sin(t * 0.8) * 0.05, s.z + c.z)
     rig.rotation.set(s.rotX + mouse.y * 0.08, s.rotY + i.rotY + mouse.x * 0.18, roll)
-    rig.scale.setScalar(Math.max(s.scale * i.scale, 0.0001))
+    const safeScale = THREE.MathUtils.clamp(s.scale, 0.7, 1.3)
+    rig.scale.setScalar(Math.max(safeScale * i.scale, 0.0001))
 
     iris.material.uniforms.uRot.value = s.ring + t * 0.03
     iris.material.uniforms.uOpacity.value = i.iris * 0.55

@@ -97,8 +97,8 @@ export default function CameraHero({
             defaults: { ease: 'power1.inOut', duration: 1 },
             scrollTrigger: {
               trigger: '.ch-main',
-              start: 'top top',
-              end: 'bottom bottom',
+              start: 'clamp(top top)',
+              end: 'clamp(bottom bottom)',
               scrub: isTouch ? 0.8 : 1.2,
               onUpdate: (self) => { scene.state.vel = self.getVelocity() },
             },
