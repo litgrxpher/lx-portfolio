@@ -336,12 +336,25 @@ export default function Home() {
       }))
     }
 
+    let lastW = typeof window !== 'undefined' ? window.innerWidth : 1200
+    let lastH = typeof window !== 'undefined' ? window.innerHeight : 800
+
     const resize = () => {
       const w = window.innerWidth
       const h = window.innerHeight
+      const isMobileScreen = w <= 768
+
+      // On mobile devices, ignore vertical-only toolbar collapse/expand (height changes < 160px)
+      // to prevent the 3D model from stretching, shrinking, or jittering while scrolling.
+      if (isMobileScreen && w === lastW && Math.abs(h - lastH) < 160) {
+        return
+      }
+      lastW = w
+      lastH = h
+
       const aspect = w / h
       camera.aspect = aspect
-      camera.fov = aspect < 1 ? Math.min(54, 42 / Math.pow(aspect, 0.4)) : 42
+      camera.fov = aspect < 1 ? Math.min(52, 42 / Math.pow(aspect, 0.35)) : 42
       camera.updateProjectionMatrix()
       renderer?.setSize(w, h, false)
     }
@@ -424,19 +437,17 @@ export default function Home() {
         const isPortrait = aspect < 1
         const currentLook = THREE.MathUtils.lerp(a.look, b.look, u)
 
-        // Mobile-only distance scaling: smoothly interpolate between wide planet shot and close-up stops
-        // using smoothstep so the camera never snaps or jitters when starting to scroll from top.
-        const wideFactor = Math.min(1.85, 1.05 / Math.pow(aspect, 0.75))
-        const closeFactor = Math.min(1.65, 0.95 / Math.pow(aspect, 0.65))
-        const zoomK = THREE.MathUtils.smoothstep(currentLook, 0, 1)
+        // Single stable mobile distance factor based on viewport aspect ratio
+        // Avoids jumping, ballooning, or sudden zoom shifts between stops
         const mobileDistFactor = isPortrait
-          ? THREE.MathUtils.lerp(wideFactor, closeFactor, zoomK)
+          ? Math.min(1.58, 0.98 / Math.pow(aspect, 0.65))
           : 1
 
-        // fly up a little between stops, plus the opening dolly-in
+        // Smooth flight between stops without erratic sine bouncing on mobile
+        const flyArc = isPortrait ? 0.04 : 0.25
         const dist =
           (THREE.MathUtils.lerp(a.dist, b.dist, u) * mobileDistFactor +
-            Math.sin(Math.PI * u) * (isPortrait ? 0.15 : 0.3) +
+            Math.sin(Math.PI * u) * flyArc +
             s.intro * 0.8) *
           R
         const lookK = currentLook * SURF
@@ -459,15 +470,12 @@ export default function Home() {
         camera.translateY(-mouse.sy * (isPortrait ? 0.15 : 0.32))
 
         if (isPortrait) {
-          // On mobile portrait:
-          // In hero (t near 0), keep model slightly lower to balance with hero typography
-          // During mountain chapters (0.2 - 0.7), center closer to 0
-          // At base camp (t approaching 1), shift camera DOWN (-translateY) so the Earth model
-          // moves UP to fill the top half (~50%) zoomed in on India/lower hemisphere,
+          // At base camp (t approaching 1), shift camera DOWN so the Earth model
+          // moves UP to fill the top half (~50%) zoomed in on India/Western Ghats,
           // leaving the lower half open for the Base Camp links and texts.
-          const heroShift = 1 - THREE.MathUtils.smoothstep(t, 0, 0.18)
-          const endShift = THREE.MathUtils.smoothstep(t, 0.72, 1)
-          const yOffset = heroShift * 0.10 - endShift * 0.33
+          // Zero vertical shearing or jumping during the hero or mountain chapters.
+          const endShift = THREE.MathUtils.smoothstep(t, 0.78, 1)
+          const yOffset = -endShift * 0.32
           camera.translateY(dist * yOffset)
         }
 
@@ -515,8 +523,9 @@ export default function Home() {
         scrollTrigger: {
           trigger: scrollRef.current,
           start: 'top top',
-          end: 'bottom bottom',
-          scrub: 0.9,
+          endTrigger: '.mtn-end',
+          end: 'top 35%',
+          scrub: 0.25,
         },
       })
 
