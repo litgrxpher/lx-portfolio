@@ -1,0 +1,38 @@
+.home-dome-hero {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+  background: #000000;
+  z-index: 1;
+}
+
+.home-dome-hud {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: clamp(16px, 3vw, 32px);
+  padding-bottom: calc(env(safe-area-inset-bottom, 0px) + 22px);
+}
+
+.home-dome-hud-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+@media (max-width: 640px) {
+  .home-dome-hud-bottom {
+    font-size: 10px;
+  }
+}
