@@ -145,6 +145,7 @@ export default function DomeGallery({
   const velocityRef = useRef({ x: 0, y: 0 });
   const startRotRef = useRef({ x: 0, y: 0 });
   const startPosRef = useRef(null);
+  const itemElsRef = useRef([]);
   const draggingRef = useRef(false);
   const movedRef = useRef(false);
   const openingRef = useRef(false);
@@ -175,6 +176,30 @@ export default function DomeGallery({
       webglSceneUpdateRef.current(xDeg, yDeg);
     }
   }, []);
+
+  // Back-hemisphere culling: hides any tiles on the back of the cylinder so no background images show through
+  const updateCulling = useCallback(
+    rotY => {
+      const seg = segments;
+      const unit = 360 / seg / 2;
+      for (let c = 0; c < seg; c++) {
+        const colX = -37 + c * 2;
+        const colAngle = (((unit * (colX + 0.5) + rotY) % 360) + 360) % 360;
+        // The front hemisphere facing the camera is within [-78deg, +78deg]
+        const isFront = colAngle <= 78 || colAngle >= 282;
+        const vis = isFront ? 'visible' : 'hidden';
+
+        const baseIdx = c * 5;
+        for (let r = 0; r < 5; r++) {
+          const el = itemElsRef.current[baseIdx + r];
+          if (el && el.style.visibility !== vis) {
+            el.style.visibility = vis;
+          }
+        }
+      }
+    },
+    [segments]
+  );
 
   const lockedRadiusRef = useRef(null);
 
@@ -209,7 +234,13 @@ export default function DomeGallery({
       let radius = basis * fit;
       const heightGuard = h * 1.35;
       radius = Math.min(radius, heightGuard);
-      radius = clamp(radius, minRadius, maxRadius);
+
+      // Responsive mobile radius: on mobile portrait, scale comfortably so cards don't collide
+      const isMobile = w < 768;
+      const effectiveMin = isMobile
+        ? Math.min(minRadius, Math.max(520, Math.round(w * 1.55)))
+        : minRadius;
+      radius = clamp(radius, effectiveMin, maxRadius);
       lockedRadiusRef.current = Math.round(radius);
 
       const viewerPad = Math.max(8, Math.round(minDim * padFactor));
@@ -239,6 +270,7 @@ export default function DomeGallery({
   // Initial transform & smooth entrance
   useEffect(() => {
     applyTransform(rotationRef.current.x, rotationRef.current.y);
+    updateCulling(rotationRef.current.y);
 
     if (mainRef.current) {
       gsap.fromTo(
@@ -253,7 +285,7 @@ export default function DomeGallery({
         }
       );
     }
-  }, [applyTransform]);
+  }, [applyTransform, updateCulling]);
 
   // WebGL 3D Ambient Dust Particles
   useEffect(() => {
@@ -392,6 +424,7 @@ export default function DomeGallery({
         rotationRef.current.x += diffX * lerpFactor;
         rotationRef.current.y += diffY * lerpFactor;
         applyTransform(rotationRef.current.x, rotationRef.current.y);
+        updateCulling(rotationRef.current.y);
       }
 
       rafId = requestAnimationFrame(tick);
@@ -399,7 +432,7 @@ export default function DomeGallery({
 
     rafId = requestAnimationFrame(tick);
     return () => cancelAnimationFrame(rafId);
-  }, [applyTransform, maxVerticalRotationDeg]);
+  }, [applyTransform, maxVerticalRotationDeg, updateCulling]);
 
   // High-performance Gesture Controller for Drag & Wheel Scroll
   useGesture(
@@ -765,6 +798,9 @@ export default function DomeGallery({
             {items.map((it, i) => (
               <div
                 key={`${it.x},${it.y},${i}`}
+                ref={el => {
+                  itemElsRef.current[i] = el;
+                }}
                 className="item"
                 data-src={it.src}
                 data-offset-x={it.x}

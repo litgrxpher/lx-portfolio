@@ -16,8 +16,7 @@
 }
 
 .sphere,
-.item,
-.item__image {
+.item {
   transform-style: preserve-3d;
 }
 
@@ -77,9 +76,6 @@ main.sphere-main {
 }
 
 .item {
-  contain: layout paint;
-  -webkit-backface-visibility: hidden;
-  backface-visibility: hidden;
   width: calc(var(--item-width) * var(--item-size-x));
   height: calc(var(--item-height) * var(--item-size-y));
   position: absolute;
@@ -89,6 +85,8 @@ main.sphere-main {
   right: -999px;
   margin: auto;
   transform-origin: 50% 50%;
+  transform-style: preserve-3d;
+  -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
   transform: rotateY(calc(var(--rot-y) * (var(--offset-x) + ((var(--item-size-x) - 1) / 2)) + var(--rot-y-delta, 0deg)))
     rotateX(calc(var(--rot-x) * (var(--offset-y) - ((var(--item-size-y) - 1) / 2)) + var(--rot-x-delta, 0deg)))
@@ -98,17 +96,24 @@ main.sphere-main {
 .item__image {
   position: absolute;
   display: block;
-  inset: 10px;
-  border-radius: var(--tile-radius, 12px);
+  inset: var(--tile-inset, 10px);
+  border-radius: var(--tile-radius, 14px);
   background: var(--overlay-blur-color, #120f17);
   overflow: hidden;
+  -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
   pointer-events: auto;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+  transition: transform 0.22s ease, border-color 0.22s ease;
+}
+
+.item__image:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+  transform: scale(1.03);
 }
 
 .item__image:focus {
@@ -120,8 +125,23 @@ main.sphere-main {
   height: 100%;
   object-fit: cover;
   pointer-events: none;
+  -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
   filter: var(--image-filter, none);
+}
+
+@media (max-width: 768px) {
+  .sphere-root {
+    --tile-inset: 8px;
+    --tile-radius: 12px;
+  }
+  .stage {
+    perspective: calc(var(--radius) * 2.2);
+  }
+  .item__image {
+    inset: 8px;
+    border-radius: 12px;
+  }
 }
 
 .viewer {
