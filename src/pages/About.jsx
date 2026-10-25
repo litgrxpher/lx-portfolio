@@ -25,18 +25,27 @@ function Float({ p, className, range }) {
 export default function About() {
   const artRef = useRef(null)
   const [anchorRatio, setAnchorRatio] = useState(0.76)
+  const [isDesktop, setIsDesktop] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(min-width: 821px)').matches : true
+  )
 
   useEffect(() => {
-    const updateAnchor = () => {
+    const media = window.matchMedia('(min-width: 821px)')
+    const update = () => {
+      setIsDesktop(media.matches)
       if (artRef.current) {
         const rect = artRef.current.getBoundingClientRect()
         const ratio = (rect.left + rect.width / 2) / window.innerWidth
         setAnchorRatio(Math.min(0.85, Math.max(0.15, ratio)))
       }
     }
-    updateAnchor()
-    window.addEventListener('resize', updateAnchor)
-    return () => window.removeEventListener('resize', updateAnchor)
+    update()
+    window.addEventListener('resize', update)
+    media.addEventListener('change', update)
+    return () => {
+      window.removeEventListener('resize', update)
+      media.removeEventListener('change', update)
+    }
   }, [])
 
   const aboutImage = allItems.find(
@@ -57,14 +66,16 @@ export default function About() {
   return (
     <article className="view about">
       <ApertureDial />
-      <div className="about-lanyard-stage">
-        <Lanyard
-          frontImage={aboutImage?.src || '/card-front.png'}
-          backImage={aboutImage?.src || '/card-back.png'}
-          strapImage="/band.png"
-          anchor={anchorRatio}
-        />
-      </div>
+      {isDesktop && (
+        <div className="about-lanyard-stage">
+          <Lanyard
+            frontImage={aboutImage?.src || '/card-front.png'}
+            backImage={aboutImage?.src || '/card-back.png'}
+            strapImage="/band.png"
+            anchor={anchorRatio}
+          />
+        </div>
+      )}
       <p className="crumb">About</p>
       <div className="ab">
         <div className="ab-text">
@@ -75,7 +86,20 @@ export default function About() {
           </h1>
           <FadeUp as="p" className="lead" delay={0.3}>{site.about}</FadeUp>
         </div>
-        <div ref={artRef} className="ab-art about-lanyard-placeholder" aria-hidden="true" />
+        {isDesktop ? (
+          <div ref={artRef} className="ab-art about-lanyard-placeholder" aria-hidden="true" />
+        ) : (
+          <div className="ab-art about-lanyard-mobile-wrap">
+            <div className="about-lanyard-mobile">
+              <Lanyard
+                frontImage={aboutImage?.src || '/card-front.png'}
+                backImage={aboutImage?.src || '/card-back.png'}
+                strapImage="/band.png"
+                anchor="center"
+              />
+            </div>
+          </div>
+        )}
         {featuredSeries && (
           <FadeUp delay={0.4} className="about-widgets-wrap">
             <section className="about-widgets" aria-label="Photography widgets">
