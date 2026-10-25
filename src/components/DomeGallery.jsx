@@ -117,6 +117,7 @@ export default function DomeGallery({
   dragSensitivity = DEFAULTS.dragSensitivity,
   segments = DEFAULTS.segments,
   dragDampening = 3,
+  dragDivisor = 3,
   openedImageWidth = 'min(86vw, 500px)',
   openedImageHeight = 'min(74vh, 540px)',
   imageBorderRadius = '18px',
@@ -140,6 +141,8 @@ export default function DomeGallery({
   const webglMatRef = useRef(null);
 
   const rotationRef = useRef({ x: 0, y: 0 });
+  const targetRotRef = useRef({ x: 0, y: 0 });
+  const velocityRef = useRef({ x: 0, y: 0 });
   const startRotRef = useRef({ x: 0, y: 0 });
   const startPosRef = useRef(null);
   const draggingRef = useRef(false);
@@ -344,10 +347,61 @@ export default function DomeGallery({
   }, []);
 
   const stopInertia = useCallback(() => {
+    velocityRef.current = { x: 0, y: 0 };
+    targetRotRef.current = { ...rotationRef.current };
     gsap.killTweensOf(rotationRef.current);
   }, []);
 
-  // GSAP-powered Gesture Controller for Drag & Wheel Scroll
+  // 60FPS Hardware-accelerated Physics & Render loop
+  useEffect(() => {
+    let rafId;
+    let lastTime = performance.now();
+
+    const tick = now => {
+      const dt = Math.min((now - lastTime) / 1000, 0.05);
+      lastTime = now;
+
+      if (!draggingRef.current && !focusedElRef.current) {
+        // Natural low-friction momentum coasting
+        if (Math.abs(velocityRef.current.y) > 0.001 || Math.abs(velocityRef.current.x) > 0.001) {
+          targetRotRef.current.y += velocityRef.current.y;
+          targetRotRef.current.x = clamp(
+            targetRotRef.current.x + velocityRef.current.x,
+            -maxVerticalRotationDeg,
+            maxVerticalRotationDeg
+          );
+
+          // Very low friction decay (0.96 per frame at 60fps) — glides smoothly and decelerates softly
+          const friction = Math.pow(0.96, dt * 60);
+          velocityRef.current.y *= friction;
+          velocityRef.current.x *= friction;
+
+          if (Math.abs(velocityRef.current.y) < 0.001 && Math.abs(velocityRef.current.x) < 0.001) {
+            velocityRef.current.y = 0;
+            velocityRef.current.x = 0;
+          }
+        }
+      }
+
+      // Smooth, jitter-free 60fps lerp
+      const diffX = targetRotRef.current.x - rotationRef.current.x;
+      const diffY = targetRotRef.current.y - rotationRef.current.y;
+
+      if (Math.abs(diffX) > 0.0001 || Math.abs(diffY) > 0.0001) {
+        const lerpFactor = Math.min(1, 1 - Math.pow(0.0001, dt));
+        rotationRef.current.x += diffX * lerpFactor;
+        rotationRef.current.y += diffY * lerpFactor;
+        applyTransform(rotationRef.current.x, rotationRef.current.y);
+      }
+
+      rafId = requestAnimationFrame(tick);
+    };
+
+    rafId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafId);
+  }, [applyTransform, maxVerticalRotationDeg]);
+
+  // High-performance Gesture Controller for Drag & Wheel Scroll
   useGesture(
     {
       onDragStart: () => {
@@ -355,61 +409,56 @@ export default function DomeGallery({
         stopInertia();
         draggingRef.current = true;
         movedRef.current = false;
-        startRotRef.current = { ...rotationRef.current };
+        startRotRef.current = { ...targetRotRef.current };
       },
-      onDrag: ({ movement: [mx, my], last }) => {
+      onDrag: ({ movement: [mx, my], velocity, direction, last }) => {
         if (focusedElRef.current || !draggingRef.current) return;
         if (!movedRef.current) {
           const dist2 = mx * mx + my * my;
           if (dist2 > 16) movedRef.current = true;
         }
 
-        // Apply dragDampening (configured to 4) for weighted, silky smooth interaction
-        const dampFactor = Math.max(1, Number(dragDampening) || 4);
-        const divisor = dragSensitivity * (dampFactor / 1.5);
+        const divisor = Number(dragDivisor) || 3;
 
-        const nextX = clamp(
+        // Directly update target rotation — RAF loop handles 60fps GPU rendering
+        targetRotRef.current.x = clamp(
           startRotRef.current.x - my / divisor,
           -maxVerticalRotationDeg,
           maxVerticalRotationDeg
         );
-        const nextY = wrapAngleSigned(startRotRef.current.y + mx / divisor);
-
-        // Immediate direct tracking with dampening resistance
-        rotationRef.current.x = nextX;
-        rotationRef.current.y = nextY;
-        applyTransform(nextX, nextY);
+        targetRotRef.current.y = startRotRef.current.y + mx / divisor;
 
         if (last) {
           draggingRef.current = false;
-          // Stop cleanly upon release — no fast automatic runaway scrolling
           if (movedRef.current) lastDragEndAt.current = performance.now();
           movedRef.current = false;
+
+          // Convert gesture release velocity into natural low-friction momentum
+          const [vMagX = 0, vMagY = 0] = velocity || [];
+          const [dirX = 0, dirY = 0] = direction || [];
+          const vx = vMagX * dirX;
+          const vy = vMagY * dirY;
+
+          if (Math.abs(vx) > 0.05 || Math.abs(vy) > 0.05) {
+            velocityRef.current.y = clamp((vx * 16.6) / divisor, -3.2, 3.2);
+            velocityRef.current.x = clamp((-vy * 16.6) / (divisor * 2), -0.6, 0.6);
+          } else {
+            velocityRef.current = { x: 0, y: 0 };
+          }
         }
       },
       onWheel: ({ event, delta: [dx, dy] }) => {
         if (focusedElRef.current) return;
         if (event && event.cancelable) event.preventDefault();
 
-        // Controlled, gentle wheel rotation respecting dragDampening
-        const dampFactor = Math.max(1, Number(dragDampening) || 4);
-        const speed = 0.045 / (dampFactor / 2);
-        const deltaX = (dx || 0) * speed;
-        const deltaY = (dy || 0) * speed;
-
-        const targetY = wrapAngleSigned(rotationRef.current.y - deltaX);
-        const targetX = clamp(rotationRef.current.x - deltaY, -maxVerticalRotationDeg, maxVerticalRotationDeg);
-
-        gsap.to(rotationRef.current, {
-          x: targetX,
-          y: targetY,
-          duration: 0.45,
-          ease: 'power2.out',
-          overwrite: 'auto',
-          onUpdate: () => {
-            applyTransform(rotationRef.current.x, rotationRef.current.y);
-          }
-        });
+        // Fluid 60fps wheel scrolling
+        const speed = 0.06;
+        targetRotRef.current.y -= (dx || 0) * speed;
+        targetRotRef.current.x = clamp(
+          targetRotRef.current.x - (dy || 0) * speed,
+          -maxVerticalRotationDeg,
+          maxVerticalRotationDeg
+        );
       }
     },
     {
@@ -466,6 +515,8 @@ export default function DomeGallery({
         onComplete: () => {
           overlay.remove();
           el.style.opacity = '';
+          targetRotRef.current = { ...rotationRef.current };
+          velocityRef.current = { x: 0, y: 0 };
           focusedElRef.current = null;
           rootRef.current?.removeAttribute('data-enlarging');
           openingRef.current = false;

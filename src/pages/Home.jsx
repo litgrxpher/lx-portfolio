@@ -51,6 +51,7 @@ export default function Home() {
         images={images}
         minRadius={1000}
         dragDampening={3}
+        dragDivisor={3}
         grayscale={false}
         overlayBlurColor="#000000"
         openedImageWidth="min(86vw, 500px)"
