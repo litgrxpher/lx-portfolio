@@ -122,7 +122,7 @@ html.ch-lock, html.ch-lock body { overflow: hidden; height: 100%; }
     letter-spacing: 0.16em;
   }
   .ch-sec--center {
-    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(50px, 14vh, 90px));
+    padding-bottom: calc(env(safe-area-inset-bottom, 0px) + clamp(40px, 12vh, 80px));
   }
   .ch-sec--center .ch-reveal {
     margin-top: 0;

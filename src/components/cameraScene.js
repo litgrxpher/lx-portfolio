@@ -108,7 +108,7 @@ export function createCameraScene(canvas, { modelUrl, onProgress } = {}) {
       model.position.copy(center).multiplyScalar(-1)
       const holder = new THREE.Group()
       holder.add(model)
-      holder.scale.setScalar(3 / size.x)
+      holder.scale.setScalar(3.35 / size.x)
       rig.add(holder)
       renderer.compile(scene, camera)
       return gltf

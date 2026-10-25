@@ -15,16 +15,16 @@ let openingHasPlayed = false
 /* Camera poses per scroll section (world units). Rotation is continuous: ~1 full turn over the page. */
 const POSES = {
   wide: [
-    { x: 0,    y: 0,   z: 0, rotX: 0.12, rotY: 0.35,     scale: 1,   ring: 0 },    // hero
-    { x: -2.9, y: 0,   z: 0, rotX: 0.05, rotY: PI * 0.9, scale: 1,   ring: 2 },    // archive
-    { x: 2.9,  y: 0,   z: 0, rotX: 0.1,  rotY: PI * 1.7, scale: 1,   ring: 4 },    // about
-    { x: 0,    y: 1.25, z: 0, rotX: 0,    rotY: PI * 2,   scale: 0.78, ring: 6.28 }, // contact (lens faces you)
+    { x: 0,    y: 0,    z: 0, rotX: 0.12, rotY: 0.35,     scale: 1.08, ring: 0 },    // hero
+    { x: -2.9, y: 0,    z: 0, rotX: 0.05, rotY: PI * 0.9, scale: 1.05, ring: 2 },    // archive
+    { x: 2.9,  y: 0,    z: 0, rotX: 0.1,  rotY: PI * 1.7, scale: 1.05, ring: 4 },    // about
+    { x: 0,    y: 1.25, z: 0, rotX: 0,    rotY: PI * 2,   scale: 0.85, ring: 6.28 }, // contact (lens faces you)
   ],
   tall: [
-    { x: 0, y: 0,    z: 0, rotX: 0.12, rotY: 0.35,     scale: 0.82, ring: 0 },    // hero
-    { x: 0, y: 1.45, z: 0, rotX: 0.05, rotY: PI * 0.9, scale: 0.72, ring: 2 },    // archive
-    { x: 0, y: 1.45, z: 0, rotX: 0.1,  rotY: PI * 1.7, scale: 0.72, ring: 4 },    // about
-    { x: 0, y: 1.2,  z: 0, rotX: 0,    rotY: PI * 2,   scale: 0.78, ring: 6.28 }, // contact
+    { x: 0, y: 0,    z: 0, rotX: 0.12, rotY: 0.35,     scale: 0.92, ring: 0 },    // hero
+    { x: 0, y: 1.45, z: 0, rotX: 0.05, rotY: PI * 0.9, scale: 0.78, ring: 2 },    // archive
+    { x: 0, y: 1.45, z: 0, rotX: 0.1,  rotY: PI * 1.7, scale: 0.78, ring: 4 },    // about
+    { x: 0, y: 1.25, z: 0, rotX: 0,    rotY: PI * 2,   scale: 0.85, ring: 6.28 }, // contact
   ],
 }
 
@@ -123,11 +123,21 @@ export default function CameraHero({
           }
         )
 
-        // copy reveals
-        gsap.utils.toArray('.ch-reveal').forEach((el) => {
+        // copy reveals: triggered by section so the bottom-of-page contact section reveals reliably on all mobile screen heights
+        gsap.utils.toArray('.ch-sec').forEach((sec) => {
+          const el = sec.querySelector('.ch-reveal')
+          if (!el) return
           gsap.from(el.children, {
-            opacity: 0, y: 40, duration: 0.9, stagger: 0.08, ease: 'power3.out',
-            scrollTrigger: { trigger: el, start: 'top 75%', toggleActions: 'play none none reverse' },
+            opacity: 0,
+            y: 32,
+            duration: 0.85,
+            stagger: 0.08,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: sec,
+              start: 'top 75%',
+              toggleActions: 'play none none reverse',
+            },
           })
         })
       }
