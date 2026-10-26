@@ -382,9 +382,15 @@ export default function Home() {
     }
     window.addEventListener('pointermove', onPointer, { passive: true })
 
-    // ---------- smooth scroll (home only; SmoothScroll skips "/") ----------
+    // ---------- smooth scroll (desktop only; mobile uses native 120Hz compositor scroll) ----------
+    const isTouch =
+      typeof window !== 'undefined' &&
+      (window.matchMedia('(pointer: coarse)').matches ||
+       'ontouchstart' in window ||
+       navigator.maxTouchPoints > 0)
+
     let lenis = null
-    if (!reduce) {
+    if (!reduce && !isTouch) {
       lenis = new Lenis({ lerp: 0.085, smoothWheel: true })
       lenisRef.current = lenis
       window.__lenis = lenis
@@ -831,7 +837,7 @@ export default function Home() {
       lenisRef.current = null
       delete window.__lenis
       html.style.overflow = ''
-      html.classList.remove('loader-active')
+      html.classList.remove('loader-active', 'lenis-stopped')
       scene.traverse((o) => {
         if (o.geometry) o.geometry.dispose()
         if (o.material) {
@@ -860,11 +866,34 @@ export default function Home() {
     } catch {
       /* ignore */
     }
+    // Always unlock document overflow immediately on tear so user can never be stuck
+    document.documentElement.style.overflow = ''
+    document.documentElement.classList.remove('loader-active', 'lenis-stopped')
     sound.unlock()
     sound.playWhoosh(1)
     sound.playClick(1.2)
     if (finishLoadingRef.current) {
       finishLoadingRef.current()
+    }
+  }
+
+  const loaderTouchStartY = useRef(0)
+  const onLoaderTouchStart = (e) => {
+    if (e.touches && e.touches[0]) {
+      loaderTouchStartY.current = e.touches[0].clientY
+    }
+  }
+  const onLoaderTouchEnd = (e) => {
+    if (!ticketTornRef.current && e.changedTouches && e.changedTouches[0]) {
+      const deltaY = loaderTouchStartY.current - e.changedTouches[0].clientY
+      if (deltaY > 35) {
+        handleTear()
+      }
+    }
+  }
+  const onLoaderWheel = (e) => {
+    if (!ticketTornRef.current && e.deltaY > 20) {
+      handleTear()
     }
   }
 
@@ -899,6 +928,9 @@ export default function Home() {
         ref={loaderRef}
         className="mtn-loader"
         role="status"
+        onTouchStart={onLoaderTouchStart}
+        onTouchEnd={onLoaderTouchEnd}
+        onWheel={onLoaderWheel}
         style={shouldSkipIntro ? { display: 'none' } : undefined}
       >
         <LoaderParticles active={loaderActive} />

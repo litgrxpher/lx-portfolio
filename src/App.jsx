@@ -36,6 +36,12 @@ export default function App() {
 
   useEffect(() => {
     document.body.dataset.page = pathname === '/' ? 'home' : 'page'
+    // Ensure overflow is never stuck when navigating across pages
+    document.documentElement.style.overflow = ''
+    document.documentElement.classList.remove('lenis-stopped')
+    if (pathname !== '/') {
+      document.documentElement.classList.remove('loader-active')
+    }
     window.scrollTo(0, 0)
     // Seamlessly adjust audio atmosphere between Home (mountain wind) and other pages (subtle ambient)
     sound.setMode(pathname === '/' ? 'mountain' : 'subtle')

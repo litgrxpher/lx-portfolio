@@ -415,7 +415,7 @@ export default function TearTicket({
   };
   const onStubDown = e => {
     const s = sim.current;
-    if (disabled || used || e.button !== 0 || s.id !== null || s.phase === 'drop') return;
+    if (disabled || used || (e.pointerType === 'mouse' && e.button !== 0) || s.id !== null || s.phase === 'drop') return;
     try {
       e.currentTarget.setPointerCapture(e.pointerId);
     } catch {}
@@ -479,6 +479,14 @@ export default function TearTicket({
       s.age = 0;
       s.phase = 'drop';
     } else if (s.phase === 'held') {
+      const p = local(e);
+      const dist = Math.hypot(p.x - s.start.x, p.y - s.start.y);
+      const duration = performance.now() - s.pt;
+      // Tap or quick click on the stub tears it directly so mobile users never get stuck
+      if (dist < 16 && duration < 450) {
+        tearNow();
+        return;
+      }
       s.phase = 'return';
     }
     run();
@@ -490,7 +498,7 @@ export default function TearTicket({
   };
 
   useEffect(() => {
-    if (!tilt || reduce || disabled) return undefined;
+    if (!tilt || reduce || disabled || used) return undefined;
 
     let animId = null;
     let isUserActive = false;
@@ -600,7 +608,7 @@ export default function TearTicket({
         window.removeEventListener('deviceorientation', onOrientation);
       }
     };
-  }, [tilt, reduce, disabled, tiltMax, tiltReach, tiltX, tiltY]);
+  }, [tilt, reduce, disabled, used, tiltMax, tiltReach, tiltX, tiltY]);
 
   return (
     <div
