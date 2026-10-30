@@ -91,13 +91,6 @@ export default function About() {
       (item) => item.file === featuredSeries.cover && item.type === 'image'
     ) || featuredSeries?.items.find((item) => item.type === 'image')
 
-  const introText =
-    site.aboutIntro ||
-    (site.about ? site.about.split(/(?<=\.)\s+/)[0] : '')
-  const storyText =
-    site.aboutStory ||
-    (site.about ? site.about.slice(introText.length).trim() : '')
-
   return (
     <article className="view about">
       <ApertureDial />
@@ -115,19 +108,6 @@ export default function About() {
 
       {/* Hero: Identity & Story */}
       <section className="ab" aria-label="Introduction">
-        <div className="ab-text">
-          <h1 className="ab-title">
-            <Words text="Querying data by day," />
-            <br />
-            <Words text="Framing stories by night." delay={0.2} />
-          </h1>
-          {introText && (
-            <FadeUp as="p" className="ab-intro" delay={0.28}>
-              {introText}
-            </FadeUp>
-          )}
-        </div>
-
         {isDesktop ? (
           <div ref={artRef} className="ab-art about-lanyard-placeholder" aria-hidden="true" />
         ) : (
@@ -143,13 +123,15 @@ export default function About() {
           </div>
         )}
 
-        {storyText && (
-          <div className="ab-full">
-            <FadeUp as="p" className="lead" delay={0.34}>
-              {storyText}
-            </FadeUp>
-          </div>
-        )}
+        <h1 className="ab-title">
+          <Words text="Querying data by day," />
+          <br />
+          <Words text="Framing stories by night." delay={0.2} />
+        </h1>
+
+        <FadeUp as="p" className="lead" delay={0.3}>
+          {site.about}
+        </FadeUp>
       </section>
 
       {/* Section 01: Core Toolkit */}
