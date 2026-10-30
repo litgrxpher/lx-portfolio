@@ -359,6 +359,23 @@ dl.meta dd a { border-bottom: 1px solid var(--ink); margin-right: 10px; }
   position: relative;
 }
 
+.about-lanyard-stage {
+  position: absolute;
+  top: 0;
+  left: calc(var(--pad) * -1);
+  right: calc(var(--pad) * -1);
+  height: clamp(600px, 64vw, 760px);
+  z-index: 20;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.about-lanyard-stage .lanyard {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
 .ab {
   position: relative;
   min-height: 0;
@@ -405,7 +422,7 @@ dl.meta dd a { border-bottom: 1px solid var(--ink); margin-right: 10px; }
 .ab-art {
   position: relative;
   width: 100%;
-  height: clamp(460px, 46vw, 560px);
+  height: clamp(480px, 48vw, 580px);
   min-height: 0;
 }
 
@@ -457,6 +474,7 @@ dl.meta dd a { border-bottom: 1px solid var(--ink); margin-right: 10px; }
 .ab-img:hover .tilt { transform: rotate(0) scale(1.05); }
 
 @media (max-width: 820px) {
+  .about-lanyard-stage { display: none !important; }
   .ab {
     display: flex;
     flex-direction: column;
@@ -481,9 +499,16 @@ dl.meta dd a { border-bottom: 1px solid var(--ink); margin-right: 10px; }
     gap: 12px;
   }
   .ab-art {
+    position: relative;
     width: 100%;
-    height: clamp(320px, 75vw, 400px);
+    height: clamp(380px, 86vw, 480px);
     margin-top: 10px;
+    overflow: visible;
+  }
+  .about-lanyard-box {
+    width: calc(100% + var(--pad) * 2);
+    margin-left: calc(var(--pad) * -1);
+    overflow: visible;
   }
   .ab-art-hint {
     bottom: 6px;
@@ -507,7 +532,7 @@ dl.meta dd a { border-bottom: 1px solid var(--ink); margin-right: 10px; }
     gap: 10px;
   }
   .ab-art {
-    height: clamp(290px, 80vw, 350px);
+    height: clamp(350px, 90vw, 440px);
     margin-top: 4px;
   }
   dl.meta > div { grid-template-columns: 88px minmax(0, 1fr); gap: 12px; font-size: 16px; }

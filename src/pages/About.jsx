@@ -52,19 +52,33 @@ function Float({ p, className, range }) {
 }
 
 export default function About() {
+  const artRef = useRef(null)
+  const [anchorRatio, setAnchorRatio] = useState(0.77)
   const [isDesktop, setIsDesktop] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(min-width: 821px)').matches : true
   )
 
   useEffect(() => {
     const media = window.matchMedia('(min-width: 821px)')
-    const update = () => setIsDesktop(media.matches)
+    const update = () => {
+      const desktop = media.matches
+      setIsDesktop(desktop)
+      if (desktop && artRef.current) {
+        const rect = artRef.current.getBoundingClientRect()
+        const ratio = (rect.left + rect.width / 2) / window.innerWidth
+        setAnchorRatio(Math.min(0.85, Math.max(0.15, ratio)))
+      }
+    }
     update()
     window.addEventListener('resize', update)
     media.addEventListener('change', update)
+    const rafId = requestAnimationFrame(update)
+    const timer = setTimeout(update, 200)
     return () => {
       window.removeEventListener('resize', update)
       media.removeEventListener('change', update)
+      cancelAnimationFrame(rafId)
+      clearTimeout(timer)
     }
   }, [])
 
@@ -85,6 +99,19 @@ export default function About() {
   return (
     <article className="view about">
       <ApertureDial />
+      {/* Desktop lanyard stage: full viewport width so card never clips horizontally or vertically */}
+      {isDesktop && (
+        <div className="about-lanyard-stage" aria-hidden="true">
+          <Lanyard
+            frontImage={aboutImage?.src || '/card-front.png'}
+            backImage={aboutImage?.src || '/card-back.png'}
+            strapImage="/band.png"
+            anchor={anchorRatio}
+            size={0.6}
+            strapLength={0.48}
+          />
+        </div>
+      )}
       <p className="crumb">About</p>
 
       {/* Hero: Identity & Story */}
@@ -106,20 +133,22 @@ export default function About() {
           </FadeUp>
         </div>
 
-        <div className="ab-art">
-          <div className="about-lanyard-box">
-            <Lanyard
-              frontImage={aboutImage?.src || '/card-front.png'}
-              backImage={aboutImage?.src || '/card-back.png'}
-              strapImage="/band.png"
-              anchor="center"
-              size={isDesktop ? 0.74 : 0.72}
-              strapLength={isDesktop ? 0.35 : 0.16}
-            />
-            <span className="ab-art-hint" aria-hidden="true">
-              ✦ Interactive ID · Drag to swing
-            </span>
-          </div>
+        <div ref={artRef} className="ab-art">
+          {!isDesktop && (
+            <div className="about-lanyard-box">
+              <Lanyard
+                frontImage={aboutImage?.src || '/card-front.png'}
+                backImage={aboutImage?.src || '/card-back.png'}
+                strapImage="/band.png"
+                anchor="center"
+                size={0.62}
+                strapLength={0.2}
+              />
+            </div>
+          )}
+          <span className="ab-art-hint" aria-hidden="true">
+            ✦ Interactive ID · Drag to swing
+          </span>
         </div>
       </section>
 
@@ -131,7 +160,7 @@ export default function About() {
             <div className="about-sec-title-row">
               <h2 id="toolkit-title" className="about-sec-title">Core Toolkit</h2>
               <p className="about-sec-copy">
-                From database systems and developer environments to 3D rendering and film post-production.
+                From database systems and developer environments to 3D rendering and post-production.
               </p>
             </div>
           </div>
