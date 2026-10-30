@@ -145,7 +145,9 @@ export default function About() {
         </div>
       )}
       <p className="crumb">About</p>
-      <div className="ab">
+
+      {/* Hero: Identity & Story */}
+      <section className="ab" aria-label="Introduction">
         <div className="ab-text">
           <h1 className="ab-title">
             <Words text="Querying data by day," />
@@ -153,7 +155,13 @@ export default function About() {
             <Words text="Framing stories by night." delay={0.2} />
           </h1>
           <FadeUp as="p" className="lead" delay={0.3}>{site.about}</FadeUp>
+          <div className="about-badges" aria-label="Key disciplines">
+            <span className="about-badge">Computer Science</span>
+            <span className="about-badge">Visual Storyteller</span>
+            <span className="about-badge">Kerala, India</span>
+          </div>
         </div>
+
         {isDesktop ? (
           <div ref={artRef} className="ab-art about-lanyard-placeholder" aria-hidden="true" />
         ) : (
@@ -168,69 +176,125 @@ export default function About() {
             </div>
           </div>
         )}
-        {featuredSeries && (
-          <FadeUp delay={0.4} className="about-widgets-wrap">
-            <section className="about-widgets" aria-label="Photography widgets">
-              <Link
-                to={`/series/${featuredSeries.slug}/1`}
-                className="about-widget about-featured-widget"
-                aria-label={`Explore ${featuredSeries.title} series`}
-              >
-                {featuredCover && (
-                  <img
-                    src={featuredCover.src}
-                    alt=""
-                    loading="lazy"
-                    decoding="async"
-                  />
-                )}
-                <span className="about-featured-copy">
-                  <small>LATEST SERIES · {featuredSeries.date}</small>
-                  <b>{featuredSeries.title}</b>
-                  <small>{featuredSeries.location || featuredSeries.category} · {featuredSeries.items.filter((item) => item.type === 'image').length} PHOTOS</small>
-                </span>
-                <span className="about-widget-arrow" aria-hidden="true">↗</span>
-              </Link>
-              <div className="about-widget about-stat-widget">
-                <small>COLLECTIONS</small>
-                <b>{String(series.length).padStart(2, '0')}</b>
-              </div>
-              <div className="about-widget about-stat-widget">
-                <small>PHOTOGRAPHS</small>
-                <b>{String(photos.length).padStart(3, '0')}</b>
-              </div>
-            </section>
-          </FadeUp>
-        )}
-      </div>
+      </section>
 
-      <section className="resume" aria-labelledby="resume-title">
-        <div>
-          <p className="resume-label">A little more on paper</p>
-          <h2 id="resume-title" className="resume-title">Resume</h2>
-          <p className="resume-copy">Explore my experience, education, and skills.</p>
-        </div>
-        <div className="resume-actions">
-          <a href="/Resume.pdf" target="_blank" rel="noopener noreferrer">View resume <span aria-hidden="true">↗</span></a>
-          <a href="/Resume.pdf" download="Adharsh-CS-Resume.pdf">Download PDF <span aria-hidden="true">↓</span></a>
+      {/* Section 01: Core Toolkit */}
+      <section className="about-sec about-toolkit" aria-labelledby="toolkit-title">
+        <FadeUp>
+          <div className="about-sec-header">
+            <p className="about-sec-label">01 / Disciplines & Technologies</p>
+            <div className="about-sec-title-row">
+              <h2 id="toolkit-title" className="about-sec-title">Core Toolkit</h2>
+              <p className="about-sec-copy">
+                From database systems and developer environments to 3D rendering and film post-production.
+              </p>
+            </div>
+          </div>
+        </FadeUp>
+        <div className="about-logo-loop">
+          <LogoLoop
+            logos={toolLogos}
+            speed={70}
+            direction="left"
+            logoHeight={32}
+            gap={56}
+            hoverSpeed={0}
+            scaleOnHover={false}
+            labels="inline"
+            fadeOut={true}
+            fadeOutWidth={0.12}
+            ariaLabel="Creative and engineering tools"
+          />
         </div>
       </section>
 
-      <div className="about-logo-loop">
-        <LogoLoop
-          logos={toolLogos}
-          speed={70}
-          direction="left"
-          logoHeight={32}
-          gap={56}
-          hoverSpeed={0}
-          scaleOnHover={false}
-          labels="inline"
-          fadeOut={true}
-          fadeOutWidth={0.12}
-          ariaLabel="Creative and engineering tools"
-        />
-      </div>
+      {/* Section 02: Visual Archives & Photography */}
+      <section className="about-sec about-photography" aria-labelledby="archives-title">
+        <FadeUp>
+          <div className="about-sec-header">
+            <p className="about-sec-label">02 / Visual Archives</p>
+            <div className="about-sec-title-row">
+              <h2 id="archives-title" className="about-sec-title">Stories in Frames</h2>
+              <p className="about-sec-copy">
+                Documenting highland treks, mist-shrouded ridgelines, and unscripted road journeys across India.
+              </p>
+            </div>
+          </div>
+        </FadeUp>
+
+        <FadeUp delay={0.2}>
+          <div className="about-archives-grid">
+            {featuredSeries && (
+              <Link
+                to={`/series/${featuredSeries.slug}/1`}
+                className="about-archive-card"
+                aria-label={`Explore latest series: ${featuredSeries.title}`}
+              >
+                <div className="archive-card-thumb">
+                  {featuredCover && (
+                    <img
+                      src={featuredCover.src}
+                      alt={featuredSeries.title}
+                      loading="lazy"
+                      decoding="async"
+                    />
+                  )}
+                  <span className="archive-pill">Latest Series</span>
+                  <span className="archive-card-arrow" aria-hidden="true">↗</span>
+                </div>
+                <div className="archive-card-meta">
+                  <div>
+                    <small className="archive-date">{featuredSeries.date}</small>
+                    <h3 className="archive-title">{featuredSeries.title}</h3>
+                    <p className="archive-location">{featuredSeries.location || featuredSeries.category}</p>
+                  </div>
+                  <span className="archive-count">
+                    {featuredSeries.items.filter((item) => item.type === 'image').length} Photographs · High-res gallery
+                  </span>
+                </div>
+              </Link>
+            )}
+
+            <div className="about-stats-column">
+              <div className="about-stat-box">
+                <span className="stat-label">Curated Collections</span>
+                <b className="stat-value">{String(series.length).padStart(2, '0')}</b>
+                <span className="stat-sub">Highland treks, culture, and travels</span>
+              </div>
+              <div className="about-stat-box">
+                <span className="stat-label">Archived Photographs</span>
+                <b className="stat-value">{String(photos.length).padStart(3, '0')}</b>
+                <span className="stat-sub">Captured with Sony & iPhone rigs</span>
+              </div>
+              <Link to="/series" className="about-archives-cta">
+                <span>Browse entire visual archive</span>
+                <span className="cta-arrow" aria-hidden="true">↗</span>
+              </Link>
+            </div>
+          </div>
+        </FadeUp>
+      </section>
+
+      {/* Section 03: Resume & Credentials */}
+      <section className="about-sec resume" aria-labelledby="resume-title">
+        <FadeUp>
+          <div>
+            <p className="resume-label">03 / Experience & Credentials</p>
+            <h2 id="resume-title" className="resume-title">Resume</h2>
+            <p className="resume-copy">
+              Explore my technical background, academic journey, professional experience, and full skills breakdown.
+            </p>
+          </div>
+        </FadeUp>
+        <div className="resume-actions">
+          <a href="/Resume.pdf" target="_blank" rel="noopener noreferrer">
+            View resume <span aria-hidden="true">↗</span>
+          </a>
+          <a href="/Resume.pdf" download="Adharsh-CS-Resume.pdf">
+            Download PDF <span aria-hidden="true">↓</span>
+          </a>
+        </div>
+      </section>
 
       <SayHello />
     </article>
