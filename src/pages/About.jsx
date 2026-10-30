@@ -52,22 +52,13 @@ function Float({ p, className, range }) {
 }
 
 export default function About() {
-  const artRef = useRef(null)
-  const [anchorRatio, setAnchorRatio] = useState(0.76)
   const [isDesktop, setIsDesktop] = useState(() =>
     typeof window !== 'undefined' ? window.matchMedia('(min-width: 821px)').matches : true
   )
 
   useEffect(() => {
     const media = window.matchMedia('(min-width: 821px)')
-    const update = () => {
-      setIsDesktop(media.matches)
-      if (artRef.current) {
-        const rect = artRef.current.getBoundingClientRect()
-        const ratio = (rect.left + rect.width / 2) / window.innerWidth
-        setAnchorRatio(Math.min(0.85, Math.max(0.15, ratio)))
-      }
-    }
+    const update = () => setIsDesktop(media.matches)
     update()
     window.addEventListener('resize', update)
     media.addEventListener('change', update)
@@ -94,46 +85,42 @@ export default function About() {
   return (
     <article className="view about">
       <ApertureDial />
-      {isDesktop && (
-        <div className="about-lanyard-stage">
-          <Lanyard
-            frontImage={aboutImage?.src || '/card-front.png'}
-            backImage={aboutImage?.src || '/card-back.png'}
-            strapImage="/band.png"
-            anchor={anchorRatio}
-          />
-        </div>
-      )}
       <p className="crumb">About</p>
 
       {/* Hero: Identity & Story */}
       <section className="ab" aria-label="Introduction">
-        {isDesktop ? (
-          <div ref={artRef} className="ab-art about-lanyard-placeholder" aria-hidden="true" />
-        ) : (
-          <div className="ab-art about-lanyard-mobile-wrap">
-            <div className="about-lanyard-mobile">
-              <Lanyard
-                frontImage={aboutImage?.src || '/card-front.png'}
-                backImage={aboutImage?.src || '/card-back.png'}
-                strapImage="/band.png"
-                anchor="center"
-                strapLength={0.12}
-                size={0.68}
-              />
-            </div>
+        <div className="ab-content">
+          <h1 className="ab-title">
+            <Words text="Querying data by day," />
+            <br className="ab-br" />
+            <Words text="Framing stories by night." delay={0.2} />
+          </h1>
+
+          <FadeUp as="div" className="lead ab-lead" delay={0.3}>
+            <p>
+              I’m an electronics engineer working as a database administrator, where curiosity and a detail-oriented mindset shape how I approach data.
+            </p>
+            <p>
+              Outside of work, I explore photography, video, and design, using visual storytelling to capture places, journeys, and moments worth remembering. Whether I’m working with data or behind a camera, I enjoy finding a clear story in the details.
+            </p>
+          </FadeUp>
+        </div>
+
+        <div className="ab-art">
+          <div className="about-lanyard-box">
+            <Lanyard
+              frontImage={aboutImage?.src || '/card-front.png'}
+              backImage={aboutImage?.src || '/card-back.png'}
+              strapImage="/band.png"
+              anchor="center"
+              size={isDesktop ? 0.74 : 0.72}
+              strapLength={isDesktop ? 0.35 : 0.16}
+            />
+            <span className="ab-art-hint" aria-hidden="true">
+              ✦ Interactive ID · Drag to swing
+            </span>
           </div>
-        )}
-
-        <h1 className="ab-title">
-          <Words text="Querying data by day," />
-          <br className="ab-br" />
-          <Words text="Framing stories by night." delay={0.2} />
-        </h1>
-
-        <FadeUp as="p" className="lead" delay={0.3}>
-          {site.about}
-        </FadeUp>
+        </div>
       </section>
 
       {/* Section 01: Core Toolkit */}
