@@ -108,18 +108,12 @@ export default function About() {
 
       {/* Hero: Identity & Story */}
       <section className="ab" aria-label="Introduction">
-        <div className="ab-text">
+        <div className="ab-head">
           <h1 className="ab-title">
             <Words text="Querying data by day," />
             <br />
             <Words text="Framing stories by night." delay={0.2} />
           </h1>
-          <FadeUp as="p" className="lead" delay={0.3}>{site.about}</FadeUp>
-          <div className="about-badges" aria-label="Key disciplines">
-            <span className="about-badge">Computer Science</span>
-            <span className="about-badge">Visual Storyteller</span>
-            <span className="about-badge">Kerala, India</span>
-          </div>
         </div>
 
         {isDesktop ? (
@@ -136,6 +130,15 @@ export default function About() {
             </div>
           </div>
         )}
+
+        <div className="ab-body">
+          <FadeUp as="p" className="lead" delay={0.3}>{site.about}</FadeUp>
+          <div className="about-badges" aria-label="Key disciplines">
+            <span className="about-badge">Computer Science</span>
+            <span className="about-badge">Visual Storyteller</span>
+            <span className="about-badge">Kerala, India</span>
+          </div>
+        </div>
       </section>
 
       {/* Section 01: Core Toolkit */}
