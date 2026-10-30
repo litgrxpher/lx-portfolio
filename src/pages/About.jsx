@@ -133,11 +133,6 @@ export default function About() {
 
         <div className="ab-body">
           <FadeUp as="p" className="lead" delay={0.3}>{site.about}</FadeUp>
-          <div className="about-badges" aria-label="Key disciplines">
-            <span className="about-badge">Computer Science</span>
-            <span className="about-badge">Visual Storyteller</span>
-            <span className="about-badge">Kerala, India</span>
-          </div>
         </div>
       </section>
 
