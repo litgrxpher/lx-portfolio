@@ -28,54 +28,14 @@ function AntigravityIcon(props) {
 }
 
 const toolLogos = [
-  {
-    node: <SiBlender />,
-    title: 'Blender',
-    href: 'https://www.blender.org',
-    hoverColor: '#EA7600'
-  },
-  {
-    node: <TbBrandAdobeAfterEffect />,
-    title: 'After Effects',
-    href: 'https://www.adobe.com/products/aftereffects.html',
-    hoverColor: '#9999FF'
-  },
-  {
-    node: <SiDavinciresolve />,
-    title: 'DaVinci Resolve',
-    href: 'https://www.blackmagicdesign.com/products/davinciresolve',
-    hoverColor: '#FF5353'
-  },
-  {
-    node: <TbBrandAdobePremiere />,
-    title: 'Adobe Premiere Pro',
-    href: 'https://www.adobe.com/products/premiere.html',
-    hoverColor: '#EA77FF'
-  },
-  {
-    node: <SiFigma />,
-    title: 'Figma',
-    href: 'https://www.figma.com',
-    hoverColor: '#F24E1E'
-  },
-  {
-    node: <GrOracle />,
-    title: 'Oracle',
-    href: 'https://www.oracle.com',
-    hoverColor: '#F80000'
-  },
-  {
-    node: <SiLinux />,
-    title: 'Linux',
-    href: 'https://www.kernel.org',
-    hoverColor: '#FCC624'
-  },
-  {
-    node: <AntigravityIcon />,
-    title: 'Antigravity',
-    href: 'https://antigravity.google',
-    hoverColor: '#3186FF'
-  }
+  { node: <SiBlender />, title: 'Blender' },
+  { node: <TbBrandAdobeAfterEffect />, title: 'After Effects' },
+  { node: <SiDavinciresolve />, title: 'DaVinci Resolve' },
+  { node: <TbBrandAdobePremiere />, title: 'Adobe Premiere Pro' },
+  { node: <SiFigma />, title: 'Figma' },
+  { node: <GrOracle />, title: 'Oracle' },
+  { node: <SiLinux />, title: 'Linux' },
+  { node: <AntigravityIcon />, title: 'Antigravity' }
 ]
 
 function Float({ p, className, range }) {
@@ -194,11 +154,12 @@ export default function About() {
         <div className="about-logo-loop">
           <LogoLoop
             logos={toolLogos}
-            speed={70}
+            speed={65}
             direction="left"
-            logoHeight={32}
+            logoHeight={30}
             gap={56}
-            hoverSpeed={0}
+            pauseOnHover={false}
+            draggable={false}
             scaleOnHover={false}
             labels="inline"
             fadeOut={true}

@@ -433,9 +433,12 @@ dl.meta dd a { border-bottom: 1px solid var(--ink); margin-right: 10px; }
   margin: clamp(48px, 8vw, 100px) calc(var(--pad) * -1);
   padding: clamp(24px, 3.6vw, 42px) 0;
   position: relative;
+  pointer-events: none;
+  user-select: none;
 }
 .about-logo-loop .logoloop {
   font-family: var(--font);
+  cursor: default;
 }
 .about-logo-loop .logoloop__node svg {
   display: block;
@@ -444,18 +447,16 @@ dl.meta dd a { border-bottom: 1px solid var(--ink); margin-right: 10px; }
 }
 .about-logo-loop .logoloop__content {
   color: var(--ink);
-  opacity: 0.88;
-  transition: opacity 0.3s ease, color 0.3s ease, transform 0.3s ease;
-}
-.about-logo-loop .logoloop__item:hover .logoloop__content,
-.about-logo-loop .logoloop__item:focus-within .logoloop__content {
-  opacity: 1;
+  opacity: 0.85;
+  cursor: default;
+  pointer-events: none;
 }
 .about-logo-loop .logoloop__label {
   font-family: var(--font);
   font-weight: 500;
   font-size: clamp(14px, 1.8vw, 16px);
   letter-spacing: -0.01em;
+  color: var(--ink);
 }
 
 .about-curved-loop .curved-loop-jacket {
