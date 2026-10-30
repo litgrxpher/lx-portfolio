@@ -1,31 +1,34 @@
-// Mountain ridge wind sound synthesizer using Web Audio API.
-// Generates realistic alpine wind gusts, low mountain rumble, organic air turbulence whooshes,
-// and high-altitude whistle accents modulated in real-time by scroll speed and elevation.
-// Supports seamless cross-page subtle ambient playback when navigating away from Home.
+// Studio-grade Cinematic Soundscape & Tactile Haptics Engine using Web Audio API.
+// Generates a warm, luxurious analog ambient soundscape, elegant chapter transitions,
+// and precision camera/acoustic micro-haptic clicks for interactive elements.
+// Replaces harsh wind noise with warm cinematic depth and refined tactile feedback.
 
-class WindSoundEngine {
+class SoundEngine {
   constructor() {
     this.ctx = null
     this.enabled = typeof window !== 'undefined' && sessionStorage.getItem('site_sound') === 'true'
-    this.mode = 'mountain' // 'mountain' (dynamic on Home) | 'subtle' (soft ambient on other pages)
+    this.mode = 'mountain' // 'mountain' (cinematic depth on Home) | 'subtle' (warm gallery ambient on other pages)
     this.masterGain = null
     this.sfxGain = null
+    this.compressor = null
 
-    // Wind layers
-    this.windGain = null
-    this.rumbleGain = null
-    this.whistleGain = null
+    // Harmonic ambient drone layers
+    this.droneGain = null
+    this.droneFilter = null
+    this.droneOscs = []
+    this.droneLfo = null
 
-    // Filters
-    this.windFilter = null
-    this.windFilter2 = null
-    this.rumbleFilter = null
-    this.whistleFilter = null
+    // Velvet room air texture (warm, gentle, non-hissing room tone)
+    this.airGain = null
+    this.airFilter = null
+    this.airFilter2 = null
+    this.airSource = null
+    this.airLfo = null
 
-    // Sources & LFOs
-    this.windSource = null
-    this.lfoGust = null
-    this.lfoWhistle = null
+    // Shimmer harmonic layer
+    this.shimmerGain = null
+    this.shimmerOsc = null
+
     this.initialized = false
 
     // Subscribers for reactive UI updates
@@ -34,7 +37,6 @@ class WindSoundEngine {
 
   subscribe(listener) {
     this.listeners.add(listener)
-    // Immediately call with current state
     try {
       listener(this.enabled, this.mode)
     } catch {
@@ -69,8 +71,12 @@ class WindSoundEngine {
     }
     if (!this.sfxGain) {
       this.sfxGain = this.ctx.createGain()
-      this.sfxGain.gain.setValueAtTime(0.42, this.ctx.currentTime)
-      this.sfxGain.connect(this.ctx.destination)
+      this.sfxGain.gain.setValueAtTime(0.55, this.ctx.currentTime)
+      if (this.compressor) {
+        this.sfxGain.connect(this.compressor)
+      } else {
+        this.sfxGain.connect(this.ctx.destination)
+      }
     }
     return this.ctx
   }
@@ -84,137 +90,183 @@ class WindSoundEngine {
       this.ctx = new AudioContext()
     }
 
-    // Master bus for atmospheric wind (tuned gently so whooshes and clicks sit cleanly on top)
+    const now = this.ctx.currentTime
+
+    // Studio Mastering Limiter / Soft Dynamics Compressor
+    // Keeps sound silky and smooth, gluing the layers together with zero distortion
+    if (!this.compressor) {
+      this.compressor = this.ctx.createDynamicsCompressor()
+      this.compressor.threshold.setValueAtTime(-18, now)
+      this.compressor.knee.setValueAtTime(12, now)
+      this.compressor.ratio.setValueAtTime(4, now)
+      this.compressor.attack.setValueAtTime(0.003, now)
+      this.compressor.release.setValueAtTime(0.25, now)
+      this.compressor.connect(this.ctx.destination)
+    }
+
+    // Master bus for atmospheric ambient bed
     if (!this.masterGain) {
       this.masterGain = this.ctx.createGain()
-      const initialTarget = this.enabled ? (this.mode === 'subtle' ? 0.14 : 0.30) : 0
-      this.masterGain.gain.setValueAtTime(initialTarget, this.ctx.currentTime)
-      this.masterGain.connect(this.ctx.destination)
+      const initialTarget = this.enabled ? (this.mode === 'subtle' ? 0.09 : 0.22) : 0
+      this.masterGain.gain.setValueAtTime(initialTarget, now)
+      this.masterGain.connect(this.compressor)
     }
 
-    // Dedicated bus for tactile UI click sound effects and cinematic gusts
+    // Dedicated bus for tactile UI clicks and cinematic transition swells
     if (!this.sfxGain) {
       this.sfxGain = this.ctx.createGain()
-      this.sfxGain.gain.setValueAtTime(0.42, this.ctx.currentTime)
-      this.sfxGain.connect(this.ctx.destination)
+      this.sfxGain.gain.setValueAtTime(0.55, now)
+      this.sfxGain.connect(this.compressor)
     }
 
-    this.setupWindLayers()
+    this.setupHarmonicLayers()
+    this.setupVelvetAir()
     this.initialized = true
   }
 
-  setupWindLayers() {
+  // Layer 1: Warm Analog Harmonic Drone (Tuned chordal foundation in D / A)
+  setupHarmonicLayers() {
     if (!this.ctx) return
+    const now = this.ctx.currentTime
 
-    // Create a 5-second seamless stereo-like pink/brownian noise buffer for realistic organic wind
-    const bufferSize = this.ctx.sampleRate * 5
-    const noiseBuffer = this.ctx.createBuffer(2, bufferSize, this.ctx.sampleRate)
-    const ch0 = noiseBuffer.getChannelData(0)
-    const ch1 = noiseBuffer.getChannelData(1)
+    // Analog Moog-style smooth lowpass filter
+    this.droneFilter = this.ctx.createBiquadFilter()
+    this.droneFilter.type = 'lowpass'
+    this.droneFilter.frequency.setValueAtTime(340, now)
+    this.droneFilter.Q.setValueAtTime(0.85, now)
 
-    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0
-    let c0 = 0, c1 = 0, c2 = 0, c3 = 0, c4 = 0, c5 = 0, c6 = 0
+    this.droneGain = this.ctx.createGain()
+    this.droneGain.gain.setValueAtTime(0.40, now)
+
+    // Harmonic Chords:
+    // Root 1: Sub bass A1 (55.0Hz) - warm cinematic foundation
+    // Root 2: Mid body E2 (82.4Hz) - rich fifth warmth (triangle wave for subtle analog overtone)
+    // Root 3: Octave A2 (110.0Hz) - spatial presence
+    // Root 4: Minor Third C3 (130.8Hz) - deep contemplative cinematic emotion
+    const chordNotes = [
+      { freq: 55.0, type: 'sine', gain: 0.38 },
+      { freq: 82.4, type: 'triangle', gain: 0.22 },
+      { freq: 110.0, type: 'sine', gain: 0.18 },
+      { freq: 130.8, type: 'sine', gain: 0.12 },
+    ]
+
+    this.droneOscs = chordNotes.map(({ freq, type, gain }) => {
+      const osc = this.ctx.createOscillator()
+      const g = this.ctx.createGain()
+      osc.type = type
+      osc.frequency.setValueAtTime(freq, now)
+      g.gain.setValueAtTime(gain, now)
+
+      osc.connect(g)
+      g.connect(this.droneFilter)
+      osc.start(now)
+      return osc
+    })
+
+    // High crystalline shimmer overtone (A4: 440Hz, very subtle, like light on water or mountain peaks)
+    this.shimmerOsc = this.ctx.createOscillator()
+    this.shimmerOsc.type = 'sine'
+    this.shimmerOsc.frequency.setValueAtTime(440, now)
+
+    this.shimmerGain = this.ctx.createGain()
+    this.shimmerGain.gain.setValueAtTime(0.04, now)
+
+    this.shimmerOsc.connect(this.shimmerGain)
+    this.shimmerGain.connect(this.droneFilter)
+    this.shimmerOsc.start(now)
+
+    // Slow, meditative LFO (0.05Hz = 20-second breath) that gently swells the harmonic chord
+    this.droneLfo = this.ctx.createOscillator()
+    this.droneLfo.type = 'sine'
+    this.droneLfo.frequency.setValueAtTime(0.05, now)
+
+    const droneLfoGain = this.ctx.createGain()
+    droneLfoGain.gain.setValueAtTime(45, now)
+
+    this.droneLfo.connect(droneLfoGain)
+    droneLfoGain.connect(this.droneFilter.frequency)
+    this.droneLfo.start(now)
+
+    // Route drone to master
+    this.droneFilter.connect(this.droneGain)
+    this.droneGain.connect(this.masterGain)
+  }
+
+  // Layer 2: Velvet Room Air (Replaces harsh whistling wind with warm analog room tone / tape air)
+  setupVelvetAir() {
+    if (!this.ctx) return
+    const now = this.ctx.currentTime
+
+    // 6-second decorrelated stereo noise buffer (pink noise characteristics)
+    const bufferSize = this.ctx.sampleRate * 6
+    const airBuffer = this.ctx.createBuffer(2, bufferSize, this.ctx.sampleRate)
+    const ch0 = airBuffer.getChannelData(0)
+    const ch1 = airBuffer.getChannelData(1)
+
+    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0
+    let c0 = 0, c1 = 0, c2 = 0, c3 = 0, c4 = 0, c5 = 0
 
     for (let i = 0; i < bufferSize; i++) {
-      // Left channel pink noise
       const w0 = Math.random() * 2 - 1
-      b0 = 0.99886 * b0 + w0 * 0.0555179
-      b1 = 0.99332 * b1 + w0 * 0.0750759
-      b2 = 0.96900 * b2 + w0 * 0.1538520
-      b3 = 0.86650 * b3 + w0 * 0.3104856
-      b4 = 0.55000 * b4 + w0 * 0.5329522
-      b5 = -0.7616 * b5 - w0 * 0.0168980
-      ch0[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + w0 * 0.5362) * 0.08
-      b6 = w0 * 0.115926
+      b0 = 0.99886 * b0 + w0 * 0.0555
+      b1 = 0.99332 * b1 + w0 * 0.0750
+      b2 = 0.96900 * b2 + w0 * 0.1538
+      b3 = 0.86650 * b3 + w0 * 0.3104
+      b4 = 0.55000 * b4 + w0 * 0.5329
+      b5 = -0.7616 * b5 - w0 * 0.0168
+      ch0[i] = (b0 + b1 + b2 + b3 + b4 + b5 + w0 * 0.536) * 0.05
 
-      // Right channel pink noise (slightly decorrelated)
       const w1 = Math.random() * 2 - 1
-      c0 = 0.99886 * c0 + w1 * 0.0555179
-      c1 = 0.99332 * c1 + w1 * 0.0750759
-      c2 = 0.96900 * c2 + w1 * 0.1538520
-      c3 = 0.86650 * c3 + w1 * 0.3104856
-      c4 = 0.55000 * c4 + w1 * 0.5329522
-      c5 = -0.7616 * c5 - w1 * 0.0168980
-      ch1[i] = (c0 + c1 + c2 + c3 + c4 + c5 + c6 + w1 * 0.5362) * 0.08
-      c6 = w1 * 0.115926
+      c0 = 0.99886 * c0 + w1 * 0.0555
+      c1 = 0.99332 * c1 + w1 * 0.0750
+      c2 = 0.96900 * c2 + w1 * 0.1538
+      c3 = 0.86650 * c3 + w1 * 0.3104
+      c4 = 0.55000 * c4 + w1 * 0.5329
+      c5 = -0.7616 * c5 - w1 * 0.0168
+      ch1[i] = (c0 + c1 + c2 + c3 + c4 + c5 + w1 * 0.536) * 0.05
     }
 
-    this.windSource = this.ctx.createBufferSource()
-    this.windSource.buffer = noiseBuffer
-    this.windSource.loop = true
+    this.airSource = this.ctx.createBufferSource()
+    this.airSource.buffer = airBuffer
+    this.airSource.loop = true
 
-    // Layer 1: Body wind (gentle howling air)
-    this.windFilter = this.ctx.createBiquadFilter()
-    this.windFilter.type = 'bandpass'
-    this.windFilter.frequency.setValueAtTime(320, this.ctx.currentTime)
-    this.windFilter.Q.setValueAtTime(1.4, this.ctx.currentTime)
+    // Two cascaded steep lowpass filters (24dB/oct) to completely eliminate harsh high-frequency noise
+    this.airFilter = this.ctx.createBiquadFilter()
+    this.airFilter.type = 'lowpass'
+    this.airFilter.frequency.setValueAtTime(260, now)
+    this.airFilter.Q.setValueAtTime(0.7, now)
 
-    this.windFilter2 = this.ctx.createBiquadFilter()
-    this.windFilter2.type = 'lowpass'
-    this.windFilter2.frequency.setValueAtTime(800, this.ctx.currentTime)
+    this.airFilter2 = this.ctx.createBiquadFilter()
+    this.airFilter2.type = 'lowpass'
+    this.airFilter2.frequency.setValueAtTime(420, now)
+    this.airFilter2.Q.setValueAtTime(0.7, now)
 
-    this.windGain = this.ctx.createGain()
-    this.windGain.gain.setValueAtTime(0.28, this.ctx.currentTime)
+    this.airGain = this.ctx.createGain()
+    this.airGain.gain.setValueAtTime(0.18, now)
 
-    // Layer 2: Deep mountain pass sub rumble (cavernous bass air)
-    this.rumbleFilter = this.ctx.createBiquadFilter()
-    this.rumbleFilter.type = 'lowpass'
-    this.rumbleFilter.frequency.setValueAtTime(95, this.ctx.currentTime)
-    this.rumbleFilter.Q.setValueAtTime(2.0, this.ctx.currentTime)
+    // Gentle breathing LFO (0.07Hz) that imparts organic motion
+    this.airLfo = this.ctx.createOscillator()
+    this.airLfo.frequency.setValueAtTime(0.07, now)
+    const airLfoGain = this.ctx.createGain()
+    airLfoGain.gain.setValueAtTime(0.04, now)
+    this.airLfo.connect(airLfoGain)
+    airLfoGain.connect(this.airGain.gain)
 
-    this.rumbleGain = this.ctx.createGain()
-    this.rumbleGain.gain.setValueAtTime(0.32, this.ctx.currentTime)
+    // Route air layers
+    this.airSource.connect(this.airFilter)
+    this.airFilter.connect(this.airFilter2)
+    this.airFilter2.connect(this.airGain)
+    this.airGain.connect(this.masterGain)
 
-    // Layer 3: High-altitude thin air whistle / hiss
-    this.whistleFilter = this.ctx.createBiquadFilter()
-    this.whistleFilter.type = 'bandpass'
-    this.whistleFilter.frequency.setValueAtTime(1200, this.ctx.currentTime)
-    this.whistleFilter.Q.setValueAtTime(3.8, this.ctx.currentTime)
+    this.airSource.start(now)
+    this.airLfo.start(now)
 
-    this.whistleGain = this.ctx.createGain()
-    this.whistleGain.gain.setValueAtTime(0.06, this.ctx.currentTime)
-
-    // Natural breathing LFO that creates undulating wind gusts
-    this.lfoGust = this.ctx.createOscillator()
-    this.lfoGust.frequency.setValueAtTime(0.18, this.ctx.currentTime) // undulating every ~5.5s
-    const lfoGustGain = this.ctx.createGain()
-    lfoGustGain.gain.setValueAtTime(160, this.ctx.currentTime)
-    this.lfoGust.connect(lfoGustGain)
-    lfoGustGain.connect(this.windFilter.frequency)
-
-    this.lfoWhistle = this.ctx.createOscillator()
-    this.lfoWhistle.frequency.setValueAtTime(0.24, this.ctx.currentTime)
-    const lfoWhistleGain = this.ctx.createGain()
-    lfoWhistleGain.gain.setValueAtTime(0.08, this.ctx.currentTime)
-    this.lfoWhistle.connect(lfoWhistleGain)
-    lfoWhistleGain.connect(this.whistleGain.gain)
-
-    // Graph routing
-    this.windSource.connect(this.windFilter)
-    this.windFilter.connect(this.windFilter2)
-    this.windFilter2.connect(this.windGain)
-    this.windGain.connect(this.masterGain)
-
-    this.windSource.connect(this.rumbleFilter)
-    this.rumbleFilter.connect(this.rumbleGain)
-    this.rumbleGain.connect(this.masterGain)
-
-    this.windSource.connect(this.whistleFilter)
-    this.whistleFilter.connect(this.whistleGain)
-    this.whistleGain.connect(this.masterGain)
-
-    // Start loops
-    this.windSource.start()
-    this.lfoGust.start()
-    this.lfoWhistle.start()
-
-    // Apply current mode styling immediately if initialized in subtle mode
     if (this.mode === 'subtle') {
-      this.applySubtleMode(this.ctx.currentTime, 0.01)
+      this.applySubtleMode(now, 0.01)
     }
   }
 
-  // Switch between mountain ridge wind (Home) and subtle soothing ambient (other pages)
+  // Switch between cinematic depth (Home) and subtle gallery room tone (other pages)
   setMode(mode = 'mountain') {
     if (this.mode === mode) return
     this.mode = mode
@@ -222,9 +274,9 @@ class WindSoundEngine {
     if (this.ctx && this.initialized && this.enabled) {
       const now = this.ctx.currentTime
       if (mode === 'subtle') {
-        this.applySubtleMode(now, 1.2)
+        this.applySubtleMode(now, 1.4)
       } else {
-        this.applyMountainMode(now, 1.2)
+        this.applyMountainMode(now, 1.4)
       }
     }
 
@@ -233,39 +285,37 @@ class WindSoundEngine {
 
   applySubtleMode(time, duration = 1.0) {
     if (!this.masterGain) return
-    // Smooth soothing room tone / gentle air
-    this.masterGain.gain.setTargetAtTime(0.12, time, duration * 0.3)
-    if (this.windFilter) {
-      this.windFilter.frequency.setTargetAtTime(190, time, duration * 0.3)
-      this.windFilter.Q.setTargetAtTime(0.8, time, duration * 0.3)
+    this.masterGain.gain.setTargetAtTime(0.09, time, duration * 0.3)
+    if (this.droneFilter) {
+      this.droneFilter.frequency.setTargetAtTime(220, time, duration * 0.3)
+      this.droneFilter.Q.setTargetAtTime(0.7, time, duration * 0.3)
     }
-    if (this.rumbleFilter) {
-      this.rumbleFilter.frequency.setTargetAtTime(65, time, duration * 0.3)
+    if (this.droneGain) {
+      this.droneGain.gain.setTargetAtTime(0.28, time, duration * 0.3)
     }
-    if (this.rumbleGain) {
-      this.rumbleGain.gain.setTargetAtTime(0.15, time, duration * 0.3)
+    if (this.airGain) {
+      this.airGain.gain.setTargetAtTime(0.08, time, duration * 0.3)
     }
-    if (this.whistleGain) {
-      this.whistleGain.gain.setTargetAtTime(0.003, time, duration * 0.3)
+    if (this.shimmerGain) {
+      this.shimmerGain.gain.setTargetAtTime(0.015, time, duration * 0.3)
     }
   }
 
   applyMountainMode(time, duration = 1.0) {
     if (!this.masterGain) return
-    // Balanced background presence (0.28) allowing whooshes (0.60) and clicks (0.42) to cut through cleanly
-    this.masterGain.gain.setTargetAtTime(0.28, time, duration * 0.3)
-    if (this.windFilter) {
-      this.windFilter.frequency.setTargetAtTime(300, time, duration * 0.3)
-      this.windFilter.Q.setTargetAtTime(1.3, time, duration * 0.3)
+    this.masterGain.gain.setTargetAtTime(0.22, time, duration * 0.3)
+    if (this.droneFilter) {
+      this.droneFilter.frequency.setTargetAtTime(340, time, duration * 0.3)
+      this.droneFilter.Q.setTargetAtTime(0.85, time, duration * 0.3)
     }
-    if (this.rumbleFilter) {
-      this.rumbleFilter.frequency.setTargetAtTime(90, time, duration * 0.3)
+    if (this.droneGain) {
+      this.droneGain.gain.setTargetAtTime(0.40, time, duration * 0.3)
     }
-    if (this.rumbleGain) {
-      this.rumbleGain.gain.setTargetAtTime(0.32, time, duration * 0.3)
+    if (this.airGain) {
+      this.airGain.gain.setTargetAtTime(0.18, time, duration * 0.3)
     }
-    if (this.whistleGain) {
-      this.whistleGain.gain.setTargetAtTime(0.06, time, duration * 0.3)
+    if (this.shimmerGain) {
+      this.shimmerGain.gain.setTargetAtTime(0.04, time, duration * 0.3)
     }
   }
 
@@ -277,7 +327,7 @@ class WindSoundEngine {
       try {
         await this.ctx.resume()
         const now = this.ctx.currentTime
-        const target = this.mode === 'subtle' ? 0.12 : 0.28
+        const target = this.mode === 'subtle' ? 0.09 : 0.22
         this.masterGain.gain.cancelScheduledValues(now)
         this.masterGain.gain.setValueAtTime(0.001, now)
         this.masterGain.gain.linearRampToValueAtTime(target, now + 1.2)
@@ -306,17 +356,17 @@ class WindSoundEngine {
     const now = this.ctx.currentTime
 
     if (this.enabled) {
-      const targetGain = this.mode === 'subtle' ? 0.12 : 0.28
+      const targetGain = this.mode === 'subtle' ? 0.09 : 0.22
       this.masterGain.gain.cancelScheduledValues(now)
       this.masterGain.gain.setValueAtTime(this.masterGain.gain.value || 0.001, now)
       this.masterGain.gain.linearRampToValueAtTime(targetGain, now + 1.2)
 
-      this.playUiClick('interactive', 1.1)
-
-      if (this.mode === 'mountain') {
-        this.playWhoosh(1)
-      }
+      // Play soft luxury harmonic chime on turn on
+      this.playChime(true)
     } else {
+      // Play subtle descending release chime on turn off
+      this.playChime(false)
+
       this.masterGain.gain.cancelScheduledValues(now)
       this.masterGain.gain.setValueAtTime(this.masterGain.gain.value, now)
       this.masterGain.gain.linearRampToValueAtTime(0.0001, now + 0.6)
@@ -326,208 +376,257 @@ class WindSoundEngine {
     return this.enabled
   }
 
-  // Modulate wind based on scrolling velocity and altitude (only in mountain mode)
+  // Modulate soundscape with scroll velocity and elevation (Home mountain journey)
+  // Glides harmonic warmth smoothly rather than creating harsh whistling noise
   modulate(speed, altRatio) {
-    if (!this.enabled || !this.ctx || !this.windFilter || this.mode !== 'mountain') return
+    if (!this.enabled || !this.ctx || !this.droneFilter || this.mode !== 'mountain') return
     const now = this.ctx.currentTime
 
-    // As user scrolls faster, the wind gusts build up gently without overpowering SFX
     const clampedSpeed = Math.min(speed, 2.0)
-    const targetFreq = 180 + clampedSpeed * 160 + altRatio * 140
-    this.windFilter.frequency.setTargetAtTime(targetFreq, now, 0.2)
+    // Filter opens smoothly into warm presence without high-frequency whistle
+    const targetFreq = 260 + clampedSpeed * 180 + altRatio * 140
+    this.droneFilter.frequency.setTargetAtTime(targetFreq, now, 0.25)
 
-    // High elevation (e.g. Everest 8849m) boosts the thin air whistle layer gently
-    if (this.whistleGain) {
-      const targetWhistleGain = 0.04 + altRatio * 0.10 + clampedSpeed * 0.06
-      this.whistleGain.gain.setTargetAtTime(targetWhistleGain, now, 0.25)
+    // Higher altitude blooms the subtle crystalline shimmer gently
+    if (this.shimmerGain) {
+      const targetShimmer = 0.03 + altRatio * 0.08 + clampedSpeed * 0.03
+      this.shimmerGain.gain.setTargetAtTime(targetShimmer, now, 0.3)
     }
 
-    // Fast scrolling increases rumble intensity subtly
-    if (this.rumbleFilter) {
-      const targetRumbleFreq = 75 + clampedSpeed * 35
-      this.rumbleFilter.frequency.setTargetAtTime(targetRumbleFreq, now, 0.2)
+    // Dynamic presence response
+    if (this.droneGain) {
+      const targetDrone = 0.38 + clampedSpeed * 0.08
+      this.droneGain.gain.setTargetAtTime(targetDrone, now, 0.25)
     }
   }
 
-  // Mountain ridge wind whoosh / gust sweep when arriving at chapters
+  // Cinematic Chapter Transition Swell (Replaces harsh wind gust with an elegant acoustic swell)
   playWhoosh(direction = 1) {
     if (!this.enabled || !this.ctx || this.mode !== 'mountain') return
     const now = this.ctx.currentTime
 
-    // Filtered noise gust sweep with clean presence and stereo width
-    const bufferSize = this.ctx.sampleRate * 1.3
-    const gustBuffer = this.ctx.createBuffer(2, bufferSize, this.ctx.sampleRate)
-    const g0 = gustBuffer.getChannelData(0)
-    const g1 = gustBuffer.getChannelData(1)
-    for (let i = 0; i < bufferSize; i++) {
-      g0[i] = (Math.random() * 2 - 1) * 0.45
-      g1[i] = (Math.random() * 2 - 1) * 0.45
+    // 1. Warm Acoustic Sub Swell
+    const subOsc = this.ctx.createOscillator()
+    const subGain = this.ctx.createGain()
+    const startSub = direction > 0 ? 65 : 120
+    const peakSub = direction > 0 ? 115 : 70
+
+    subOsc.type = 'sine'
+    subOsc.frequency.setValueAtTime(startSub, now)
+    subOsc.frequency.exponentialRampToValueAtTime(peakSub, now + 0.32)
+    subOsc.frequency.exponentialRampToValueAtTime(45, now + 0.85)
+
+    subGain.gain.setValueAtTime(0.0001, now)
+    subGain.gain.linearRampToValueAtTime(0.35, now + 0.25)
+    subGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.85)
+
+    subOsc.connect(subGain)
+    subGain.connect(this.sfxGain || this.masterGain)
+    subOsc.start(now)
+    subOsc.stop(now + 0.9)
+
+    // 2. Silky Air Swell (Smooth bandpass sweep without harsh resonance)
+    try {
+      const bufferSize = Math.floor(this.ctx.sampleRate * 0.8)
+      const buffer = this.ctx.createBuffer(2, bufferSize, this.ctx.sampleRate)
+      const d0 = buffer.getChannelData(0)
+      const d1 = buffer.getChannelData(1)
+      for (let i = 0; i < bufferSize; i++) {
+        d0[i] = (Math.random() * 2 - 1) * 0.3
+        d1[i] = (Math.random() * 2 - 1) * 0.3
+      }
+      const noiseSrc = this.ctx.createBufferSource()
+      noiseSrc.buffer = buffer
+
+      const filter = this.ctx.createBiquadFilter()
+      filter.type = 'bandpass'
+      filter.Q.setValueAtTime(1.1, now)
+      filter.frequency.setValueAtTime(direction > 0 ? 260 : 540, now)
+      filter.frequency.exponentialRampToValueAtTime(direction > 0 ? 580 : 280, now + 0.3)
+      filter.frequency.exponentialRampToValueAtTime(180, now + 0.8)
+
+      const noiseGain = this.ctx.createGain()
+      noiseGain.gain.setValueAtTime(0.0001, now)
+      noiseGain.gain.linearRampToValueAtTime(0.24, now + 0.22)
+      noiseGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.8)
+
+      noiseSrc.connect(filter)
+      filter.connect(noiseGain)
+      noiseGain.connect(this.sfxGain || this.masterGain)
+
+      noiseSrc.start(now)
+      noiseSrc.stop(now + 0.82)
+    } catch {
+      /* ignore */
     }
-
-    const gustSrc = this.ctx.createBufferSource()
-    gustSrc.buffer = gustBuffer
-
-    const gustFilter = this.ctx.createBiquadFilter()
-    gustFilter.type = 'bandpass'
-    gustFilter.Q.setValueAtTime(1.9, now)
-
-    const gustGain = this.ctx.createGain()
-
-    const startFreq = direction > 0 ? 220 : 780
-    const peakFreq = direction > 0 ? 920 : 280
-    const endFreq = 160
-
-    gustFilter.frequency.setValueAtTime(startFreq, now)
-    gustFilter.frequency.exponentialRampToValueAtTime(peakFreq, now + 0.38)
-    gustFilter.frequency.exponentialRampToValueAtTime(endFreq, now + 1.2)
-
-    gustGain.gain.setValueAtTime(0.001, now)
-    gustGain.gain.linearRampToValueAtTime(0.60, now + 0.32)
-    gustGain.gain.exponentialRampToValueAtTime(0.0001, now + 1.25)
-
-    gustSrc.connect(gustFilter)
-    gustFilter.connect(gustGain)
-    // Route whoosh through sfxGain so it stays clearly audible above background breeze
-    gustGain.connect(this.sfxGain || this.masterGain)
-
-    gustSrc.start(now)
-    gustSrc.stop(now + 1.3)
   }
 
-  // Tactile UI click sound effect synthesizer (only active when site sound toggle is on):
-  // - 'interactive': Authentic camera shutter actuation / tactile microswitch click
-  // - 'tick': Precision f-stop / dial ratchet stepper tick
-  // - 'tap': Soft organic tactile feedback for general background clicks
+  // Soft luxury harmonic chime used when toggling site audio
+  playChime(isTurnOn = true) {
+    if (!this.ctx || !this.sfxGain) return
+    const now = this.ctx.currentTime
+
+    const freq1 = isTurnOn ? 587.33 : 880.0 // D5 or A5
+    const freq2 = isTurnOn ? 880.0 : 587.33 // A5 or D5
+
+    ;[freq1, freq2].forEach((freq, i) => {
+      const osc = this.ctx.createOscillator()
+      const gain = this.ctx.createGain()
+      const filter = this.ctx.createBiquadFilter()
+
+      osc.type = 'sine'
+      osc.frequency.setValueAtTime(freq, now + i * 0.12)
+
+      filter.type = 'lowpass'
+      filter.frequency.setValueAtTime(2400, now + i * 0.12)
+
+      gain.gain.setValueAtTime(0.0001, now + i * 0.12)
+      gain.gain.linearRampToValueAtTime(0.18, now + i * 0.12 + 0.015)
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.12 + 0.55)
+
+      osc.connect(filter)
+      filter.connect(gain)
+      gain.connect(this.sfxGain)
+
+      osc.start(now + i * 0.12)
+      osc.stop(now + i * 0.12 + 0.6)
+    })
+  }
+
+  // Tactile Precision Haptics & Acoustic Click Synthesizer:
+  // - 'interactive' / 'shutter': Leica M-series dampened mechanical shutter / tactile microswitch
+  // - 'tick': Precision f-stop / lens ratchet detent stepper click
+  // - 'tap': Soft acoustic felt thud for subtle background interactions
   playUiClick(type = 'interactive', pitchMultiplier = 1) {
     if (!this.enabled) return
     const ctx = this.ensureContext()
     if (!ctx || !this.sfxGain) return
     const now = ctx.currentTime
 
-    // Subtle micro-pitch jitter for organic tactile realism (0.97 - 1.03)
-    const jitter = 0.97 + Math.random() * 0.06
-    const p = Math.max(0.2, pitchMultiplier * jitter)
+    // Subtle micro-pitch jitter (0.98 - 1.02) for organic tactile variation
+    const jitter = 0.98 + Math.random() * 0.04
+    const p = Math.max(0.3, pitchMultiplier * jitter)
 
     if (type === 'interactive' || type === 'shutter') {
-      // 1. Crisp high-frequency contact transient (the "tick")
+      // 1. High-precision shutter leaf transient (crisp 1ms contact)
       const osc1 = ctx.createOscillator()
       const gain1 = ctx.createGain()
       const filter1 = ctx.createBiquadFilter()
 
       osc1.type = 'triangle'
-      osc1.frequency.setValueAtTime(2200 * p, now)
-      osc1.frequency.exponentialRampToValueAtTime(Math.max(10, 480 * p), now + 0.016)
+      osc1.frequency.setValueAtTime(2600 * p, now)
+      osc1.frequency.exponentialRampToValueAtTime(Math.max(20, 520 * p), now + 0.014)
 
       filter1.type = 'bandpass'
-      filter1.frequency.setValueAtTime(1900 * p, now)
-      filter1.Q.setValueAtTime(1.8, now)
+      filter1.frequency.setValueAtTime(2200 * p, now)
+      filter1.Q.setValueAtTime(1.6, now)
 
       gain1.gain.setValueAtTime(0.001, now)
-      gain1.gain.linearRampToValueAtTime(0.28, now + 0.0015)
-      gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.02)
+      gain1.gain.linearRampToValueAtTime(0.24, now + 0.001)
+      gain1.gain.exponentialRampToValueAtTime(0.0001, now + 0.018)
 
       osc1.connect(filter1)
       filter1.connect(gain1)
       gain1.connect(this.sfxGain)
 
       osc1.start(now)
-      osc1.stop(now + 0.022)
+      osc1.stop(now + 0.02)
 
-      // 2. Mechanical body resonance / shutter curtain leaf (the "clack")
+      // 2. Damped magnesium/wood body resonance (warm acoustic body, 18ms decay)
       const osc2 = ctx.createOscillator()
       const gain2 = ctx.createGain()
       const filter2 = ctx.createBiquadFilter()
 
       osc2.type = 'sine'
-      osc2.frequency.setValueAtTime(360 * p, now)
-      osc2.frequency.exponentialRampToValueAtTime(Math.max(10, 95 * p), now + 0.036)
+      osc2.frequency.setValueAtTime(320 * p, now)
+      osc2.frequency.exponentialRampToValueAtTime(Math.max(20, 90 * p), now + 0.032)
 
       filter2.type = 'lowpass'
-      filter2.frequency.setValueAtTime(750 * p, now)
+      filter2.frequency.setValueAtTime(640 * p, now)
 
       gain2.gain.setValueAtTime(0.001, now)
-      gain2.gain.linearRampToValueAtTime(0.22, now + 0.002)
-      gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.04)
+      gain2.gain.linearRampToValueAtTime(0.20, now + 0.0015)
+      gain2.gain.exponentialRampToValueAtTime(0.0001, now + 0.035)
 
       osc2.connect(filter2)
       filter2.connect(gain2)
       gain2.connect(this.sfxGain)
 
       osc2.start(now)
-      osc2.stop(now + 0.042)
+      osc2.stop(now + 0.038)
 
-      // 3. Ultra-short mechanical noise puff (simulates mirror/shutter leaf motion)
+      // 3. Ultra-short leaf release puff (damped micro-noise)
       try {
-        const noiseLen = Math.floor(ctx.sampleRate * 0.015)
+        const noiseLen = Math.floor(ctx.sampleRate * 0.012)
         const noiseBuf = ctx.createBuffer(1, noiseLen, ctx.sampleRate)
         const data = noiseBuf.getChannelData(0)
         for (let i = 0; i < noiseLen; i++) {
-          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (noiseLen * 0.35))
+          data[i] = (Math.random() * 2 - 1) * Math.exp(-i / (noiseLen * 0.28))
         }
         const noiseSrc = ctx.createBufferSource()
         noiseSrc.buffer = noiseBuf
 
         const nFilter = ctx.createBiquadFilter()
         nFilter.type = 'bandpass'
-        nFilter.frequency.setValueAtTime(2600 * p, now)
-        nFilter.Q.setValueAtTime(1.4, now)
+        nFilter.frequency.setValueAtTime(2400 * p, now)
+        nFilter.Q.setValueAtTime(1.2, now)
 
         const nGain = ctx.createGain()
-        nGain.gain.setValueAtTime(0.08, now)
-        nGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.015)
+        nGain.gain.setValueAtTime(0.06, now)
+        nGain.gain.exponentialRampToValueAtTime(0.0001, now + 0.012)
 
         noiseSrc.connect(nFilter)
         nFilter.connect(nGain)
         nGain.connect(this.sfxGain)
 
         noiseSrc.start(now)
-        noiseSrc.stop(now + 0.016)
+        noiseSrc.stop(now + 0.014)
       } catch {
-        /* ignore noise buffer error */
+        /* ignore */
       }
     } else if (type === 'tick') {
-      // Precision ratchet/dial tick
+      // Precision aperture ring / dial detent tick
       const osc = ctx.createOscillator()
       const gain = ctx.createGain()
       osc.type = 'sine'
-      osc.frequency.setValueAtTime(1550 * p, now)
-      osc.frequency.exponentialRampToValueAtTime(Math.max(10, 620 * p), now + 0.012)
+      osc.frequency.setValueAtTime(2100 * p, now)
+      osc.frequency.exponentialRampToValueAtTime(Math.max(20, 820 * p), now + 0.009)
 
       gain.gain.setValueAtTime(0.001, now)
-      gain.gain.linearRampToValueAtTime(0.18, now + 0.001)
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.014)
+      gain.gain.linearRampToValueAtTime(0.16, now + 0.0008)
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.011)
 
       osc.connect(gain)
       gain.connect(this.sfxGain)
       osc.start(now)
-      osc.stop(now + 0.016)
+      osc.stop(now + 0.013)
     } else {
-      // 'tap': Soft, tactile organic tap for general background clicks
+      // 'tap': Warm velvet felt acoustic tap
       const osc = ctx.createOscillator()
       const gain = ctx.createGain()
       const filter = ctx.createBiquadFilter()
 
       osc.type = 'sine'
-      osc.frequency.setValueAtTime(280 * p, now)
-      osc.frequency.exponentialRampToValueAtTime(Math.max(10, 85 * p), now + 0.026)
+      osc.frequency.setValueAtTime(220 * p, now)
+      osc.frequency.exponentialRampToValueAtTime(Math.max(20, 75 * p), now + 0.024)
 
       filter.type = 'lowpass'
-      filter.frequency.setValueAtTime(520, now)
+      filter.frequency.setValueAtTime(420, now)
 
       gain.gain.setValueAtTime(0.001, now)
-      gain.gain.linearRampToValueAtTime(0.09, now + 0.002)
-      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.03)
+      gain.gain.linearRampToValueAtTime(0.08, now + 0.0015)
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.026)
 
       osc.connect(filter)
       filter.connect(gain)
       gain.connect(this.sfxGain)
 
       osc.start(now)
-      osc.stop(now + 0.032)
+      osc.stop(now + 0.028)
     }
   }
 
-  // Soft organic tactile click (backward compatible with existing callers)
+  // Backward compatible alias
   playClick(pitchMultiplier = 1) {
     if (!this.enabled) return
     this.playUiClick('interactive', pitchMultiplier)
@@ -545,9 +644,19 @@ class WindSoundEngine {
     this.ctx = null
     this.sfxGain = null
     this.masterGain = null
+    this.compressor = null
+    this.droneOscs = []
+    this.droneFilter = null
+    this.droneGain = null
+    this.airSource = null
+    this.airFilter = null
+    this.airFilter2 = null
+    this.airGain = null
+    this.shimmerOsc = null
+    this.shimmerGain = null
     this.enabled = false
     this.notify()
   }
 }
 
-export const sound = new WindSoundEngine()
+export const sound = new SoundEngine()

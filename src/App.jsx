@@ -43,7 +43,7 @@ export default function App() {
       document.documentElement.classList.remove('loader-active')
     }
     window.scrollTo(0, 0)
-    // Seamlessly adjust audio atmosphere between Home (mountain wind) and other pages (subtle ambient)
+    // Seamlessly adjust audio atmosphere between Home (cinematic depth) and other pages (warm gallery ambient)
     sound.setMode(pathname === '/' ? 'mountain' : 'subtle')
   }, [pathname])
 
