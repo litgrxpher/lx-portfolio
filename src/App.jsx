@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { Routes, Route, useLocation, Navigate } from 'react-router-dom'
 import { AnimatePresence, motion, useScroll, useSpring } from 'framer-motion'
 import Header from './components/Header'
+import Cursor from './components/Cursor'
 import SmoothScroll from './components/SmoothScroll'
 import Home from './pages/Home'
 import About from './pages/About'
@@ -107,6 +108,7 @@ export default function App() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </AnimatePresence>
+      <Cursor />
     </>
   )
 }

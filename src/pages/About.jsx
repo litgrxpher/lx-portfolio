@@ -223,9 +223,6 @@ export default function About() {
                     <h3 className="archive-title">{featuredSeries.title}</h3>
                     <p className="archive-location">{featuredSeries.location || featuredSeries.category}</p>
                   </div>
-                  <span className="archive-count">
-                    {featuredSeries.items.filter((item) => item.type === 'image').length} Photographs · High-res gallery
-                  </span>
                 </div>
               </Link>
             )}
