@@ -17,7 +17,7 @@ gsap.registerPlugin(ScrollTrigger)
 const MODEL_URL = '/earth.glb' // put the file in /public
 const SATELLITE_URL = '/satellite.glb'
 const SATELLITE_ORBIT_R = 13.2
-const SATELLITE_SPEED = 0.2
+const SATELLITE_SPEED = 0.22
 const MODEL_BYTES = 20361636 // fallback when the server sends no Content-Length
 const TEX_URL = '/earth/' // high-resolution maps live in /public/earth/
 // [key, file, isColour]: these replace the model's built-in 1024px textures
@@ -222,6 +222,18 @@ export default function Home() {
   const finishLoadingRef = useRef(null)
   const ticketTornRef = useRef(shouldSkipIntro)
   const assetsReadyRef = useRef(false)
+  const [satelliteTracking, setSatelliteTracking] = useState(false)
+  const trackingRef = useRef(false)
+  const flybyRef = useRef({ progress: shouldSkipIntro ? 1 : 0 })
+
+  const handleToggleSatelliteTracking = () => {
+    sound.playClick(1.2)
+    setSatelliteTracking((prev) => {
+      const next = !prev
+      trackingRef.current = next
+      return next
+    })
+  }
 
   const photoCount = useMemo(() => allItems.filter((i) => i.type === 'image').length, [])
 
@@ -340,45 +352,53 @@ export default function Home() {
     scene.add(stars)
 
     // ---------- satellite orbit system ----------
-    const satelliteOrbit = new THREE.Group()
-    satelliteOrbit.rotation.x = THREE.MathUtils.degToRad(24)
-    satelliteOrbit.rotation.y = THREE.MathUtils.degToRad(-14)
-    satelliteOrbit.rotation.z = THREE.MathUtils.degToRad(32)
-    rig.add(satelliteOrbit)
+    // Daylight observation orbit sweeping across the sunlit quadrant over Western Ghats / Kerala
+    const heroCamDir = dirOf(10.08, 77.06).normalize()
+    const worldUp = new THREE.Vector3(0, 1, 0)
+    const heroRight = new THREE.Vector3().crossVectors(worldUp, heroCamDir).normalize()
+    const heroUp = new THREE.Vector3().crossVectors(heroCamDir, heroRight).normalize()
 
-    // Subtle glowing orbital trace path
+    // Subtle glowing orbital trace path across the sunlit quadrant
     const orbitPathGeo = new THREE.BufferGeometry()
     const orbitPts = []
     const orbitSegments = 128
     for (let j = 0; j <= orbitSegments; j++) {
       const theta = (j / orbitSegments) * Math.PI * 2
-      orbitPts.push(new THREE.Vector3(Math.cos(theta) * SATELLITE_ORBIT_R, 0, Math.sin(theta) * SATELLITE_ORBIT_R))
+      const u = 0.22 + Math.cos(theta) * 0.15
+      const v = 0.08 + Math.sin(theta) * 0.10
+      const w = Math.sqrt(Math.max(0.08, 1 - u * u - v * v))
+      const pt = heroCamDir.clone().multiplyScalar(w)
+        .addScaledVector(heroRight, u)
+        .addScaledVector(heroUp, v)
+        .normalize().multiplyScalar(SATELLITE_ORBIT_R)
+      orbitPts.push(pt)
     }
     orbitPathGeo.setFromPoints(orbitPts)
     const orbitPathMat = new THREE.LineBasicMaterial({
-      color: 0x55aaff,
+      color: 0x44c8ff,
       transparent: true,
-      opacity: 0.26,
+      opacity: 0.32,
       depthWrite: false,
     })
     const orbitPath = new THREE.Line(orbitPathGeo, orbitPathMat)
-    satelliteOrbit.add(orbitPath)
+    rig.add(orbitPath)
 
     const satelliteHolder = new THREE.Group()
-    satelliteOrbit.add(satelliteHolder)
+    rig.add(satelliteHolder)
 
     // Telemetry strobe beacon LED on satellite
-    const beaconGeo = new THREE.SphereGeometry(0.08, 10, 10)
+    const beaconGeo = new THREE.SphereGeometry(0.07, 10, 10)
     const beaconMat = new THREE.MeshBasicMaterial({
       color: 0x00ffcc,
       transparent: true,
       opacity: 0.95,
     })
     const beaconMesh = new THREE.Mesh(beaconGeo, beaconMat)
-    beaconMesh.position.set(0, 0.28, 0)
+    beaconMesh.position.set(0, 0.22, 0)
     satelliteHolder.add(beaconMesh)
 
     let satelliteMesh = null
+    let baseSatScale = 1
     const satLoader = new GLTFLoader()
     satLoader.load(
       SATELLITE_URL,
@@ -405,13 +425,13 @@ export default function Home() {
         const sSize = sBox.getSize(new THREE.Vector3())
         const sCenter = sBox.getCenter(new THREE.Vector3())
         const maxDim = Math.max(sSize.x, sSize.y, sSize.z)
-        const scale = 2.45 / (maxDim || 1)
+        baseSatScale = 2.45 / (maxDim || 1)
 
         sat.position.copy(sCenter).multiplyScalar(-1)
 
         const satPivot = new THREE.Group()
         satPivot.add(sat)
-        satPivot.scale.setScalar(scale)
+        satPivot.scale.setScalar(baseSatScale)
 
         // Flight attitude
         satPivot.rotation.x = THREE.MathUtils.degToRad(16)
@@ -604,23 +624,70 @@ export default function Home() {
       // revolve satellite model around Earth
       if (satelliteHolder) {
         const satAngle = time * SATELLITE_SPEED
-        const sx = Math.cos(satAngle) * SATELLITE_ORBIT_R
-        const sz = Math.sin(satAngle) * SATELLITE_ORBIT_R
-        satelliteHolder.position.set(sx, 0, sz)
-        satelliteHolder.rotation.y = -satAngle + Math.PI / 2
+        const u = 0.22 + Math.cos(satAngle) * 0.15
+        const v = 0.08 + Math.sin(satAngle) * 0.10
+        const w = Math.sqrt(Math.max(0.08, 1 - u * u - v * v))
+        const targetOrbitPos = heroCamDir.clone().multiplyScalar(w)
+          .addScaledVector(heroRight, u)
+          .addScaledVector(heroUp, v)
+          .normalize().multiplyScalar(SATELLITE_ORBIT_R)
 
-        if (satelliteMesh) {
-          // Slow solar panel attitude roll (catches sun glints)
-          satelliteMesh.rotation.y = Math.sin(time * 0.28) * 0.15
-          satelliteMesh.rotation.x = THREE.MathUtils.degToRad(16) + Math.cos(time * 0.2) * 0.05
+        // Hero flyby entrance interpolation
+        const flybyP = flybyRef.current?.progress ?? 1
+        if (flybyP < 1) {
+          // Dynamic foreground start position near camera
+          const flybyStart = camera.position.clone()
+            .addScaledVector(right, 4.0)
+            .addScaledVector(up, -2.0)
+            .sub(camDir.clone().multiplyScalar(5.2))
+          const flybyMid = camera.position.clone()
+            .addScaledVector(right, 2.2)
+            .addScaledVector(up, 1.4)
+            .sub(camDir.clone().multiplyScalar(8.8))
+          const inv = 1 - flybyP
+          satelliteHolder.position.copy(
+            flybyStart.clone().multiplyScalar(inv * inv)
+              .addScaledVector(flybyMid, 2 * inv * flybyP)
+              .addScaledVector(targetOrbitPos, flybyP * flybyP)
+          )
+        } else {
+          satelliteHolder.position.copy(targetOrbitPos)
         }
 
-        // Telemetry beacon avionics strobe pulse
+        // Orient satellite along orbital tangent direction
+        const du = -Math.sin(satAngle) * 0.15
+        const dv = Math.cos(satAngle) * 0.10
+        const tangent = heroRight.clone().multiplyScalar(du).addScaledVector(heroUp, dv).normalize()
+        satelliteHolder.lookAt(satelliteHolder.position.clone().add(tangent))
+
+        if (satelliteMesh) {
+          // Dynamic scale: prominent on hero, smoothly normalizes as user scrolls down into mountains
+          const scrollFade = THREE.MathUtils.clamp(s.t * 3.5, 0, 1)
+          const scaleMult = THREE.MathUtils.lerp(1.0, 0.52, scrollFade)
+          const flybyScale = flybyP < 1 ? (1 + (1 - flybyP) * 0.7) : 1
+          satelliteMesh.scale.setScalar(baseSatScale * scaleMult * flybyScale)
+
+          // Slow solar panel attitude roll + interactive cursor parallax
+          const parallaxPitch = -mouse.sy * 0.16
+          const parallaxYaw = mouse.sx * 0.22
+          satelliteMesh.rotation.y = Math.sin(time * 0.25) * 0.12 + parallaxYaw
+          satelliteMesh.rotation.x = THREE.MathUtils.degToRad(16) + parallaxPitch
+        }
+
+        // Avionics telemetry beacon double-flash strobe
         if (beaconMat) {
-          const cycle = (time * 1.5) % 1
-          const strobe = (cycle < 0.12 || (cycle > 0.2 && cycle < 0.32)) ? 1 : 0.08
+          const isTracking = trackingRef.current
+          const cycle = (time * 1.6) % 1.2
+          const isDoubleFlash = cycle < 0.08 || (cycle > 0.16 && cycle < 0.24)
+          const strobe = isTracking ? (Math.sin(time * 8.5) > 0 ? 1 : 0.25) : (isDoubleFlash ? 1 : 0.08)
           beaconMat.opacity = strobe * 0.95
-          beaconMesh.scale.setScalar(strobe > 0.5 ? 1.4 : 0.75)
+          beaconMesh.scale.setScalar(strobe > 0.5 ? 1.45 : 0.75)
+        }
+
+        // Orbit path glow modulation
+        if (orbitPathMat) {
+          const isTracking = trackingRef.current
+          orbitPathMat.opacity = isTracking ? (0.62 + Math.sin(time * 4) * 0.18) : 0.28
         }
       }
 
@@ -718,6 +785,7 @@ export default function Home() {
 
       if (reduce) {
         s.intro = 0
+        if (flybyRef.current) flybyRef.current.progress = 1
         setLoaderActive(false)
         if (loaderRef.current) loaderRef.current.style.display = 'none'
         gsap.set('.mtn-line > span', { y: '0%' })
@@ -779,6 +847,17 @@ export default function Home() {
 
       // 5. Camera glides in from deep space toward Western Ghats
       tl.to(s, { intro: 0, duration: 2.8, ease: 'power3.out' }, 0.1)
+
+      // Dramatic Hero Flyby: satellite swoops from foreground space into orbital lock
+      tl.to(
+        flybyRef.current,
+        {
+          progress: 1,
+          duration: 3.0,
+          ease: 'power2.out',
+        },
+        0.12
+      )
 
       // 6. Hero typography gracefully emerges from behind its masks
       tl.fromTo(
@@ -1168,16 +1247,27 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="mtn-hud" aria-hidden="true">
+      <div className="mtn-hud">
         <span>
           Location <b ref={placeRef}>Western Ghats · Kerala</b>
         </span>
         <span>
           Elevation <b ref={altRef}>2695</b> m
         </span>
-        <span className="mtn-hud-sat">
-          Telemetry <b><span className="mtn-sat-dot" />SAT-01 · LEO 420 KM</b>
-        </span>
+        <button
+          type="button"
+          className={`mtn-hud-sat ${satelliteTracking ? 'is-tracking' : ''}`}
+          onClick={handleToggleSatelliteTracking}
+          title="Toggle orbital satellite tracking telemetry"
+          aria-label="Track Satellite SAT-01"
+        >
+          <span className="mtn-sat-dot" />
+          <span>
+            {satelliteTracking
+              ? 'LOCKED // SAT-01 · 420 KM · 7.66 KM/S'
+              : 'Telemetry SAT-01 · LEO 420 KM'}
+          </span>
+        </button>
       </div>
 
       <div ref={scrollRef} className="mtn-scroll">

@@ -576,7 +576,33 @@ body[data-page='home'] .top {
 .mtn-hud-sat {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  background: rgba(var(--bg-rgb, 10, 10, 10), 0.45);
+  border: 1px solid color-mix(in srgb, var(--ink) 18%, transparent);
+  border-radius: 999px;
+  padding: 4px 12px;
+  font-family: var(--mono, monospace);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+  cursor: pointer;
+  pointer-events: auto;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.25s ease;
+}
+.mtn-hud-sat:hover {
+  background: rgba(var(--bg-rgb, 10, 10, 10), 0.75);
+  border-color: #00ffcc;
+  box-shadow: 0 0 12px rgba(0, 255, 204, 0.25);
+  transform: translateY(-1px);
+}
+.mtn-hud-sat.is-tracking {
+  background: rgba(0, 255, 204, 0.12);
+  border-color: #00ffcc;
+  color: #00ffcc;
+  box-shadow: 0 0 14px rgba(0, 255, 204, 0.35);
 }
 .mtn-sat-dot {
   display: inline-block;
@@ -585,9 +611,8 @@ body[data-page='home'] .top {
   border-radius: 50%;
   background: #00ffcc;
   box-shadow: 0 0 8px #00ffcc;
-  margin-right: 5px;
   animation: satBeaconPulse 1.8s ease-in-out infinite;
-  vertical-align: middle;
+  flex-shrink: 0;
 }
 @keyframes satBeaconPulse {
   0%, 100% { opacity: 0.35; transform: scale(0.85); box-shadow: 0 0 4px #00ffcc; }
@@ -596,7 +621,16 @@ body[data-page='home'] .top {
 @media (max-width: 640px) {
   .mtn-hud {
     font-size: 10px;
-    gap: 12px;
+    gap: 8px;
+  }
+  .mtn-hud-sat {
+    font-size: 9px;
+    padding: 3px 8px;
+    gap: 4px;
+  }
+  .mtn-sat-dot {
+    width: 5px;
+    height: 5px;
   }
 }
 
