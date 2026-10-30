@@ -91,6 +91,13 @@ export default function About() {
       (item) => item.file === featuredSeries.cover && item.type === 'image'
     ) || featuredSeries?.items.find((item) => item.type === 'image')
 
+  const introText =
+    site.aboutIntro ||
+    (site.about ? site.about.split(/(?<=\.)\s+/)[0] : '')
+  const storyText =
+    site.aboutStory ||
+    (site.about ? site.about.slice(introText.length).trim() : '')
+
   return (
     <article className="view about">
       <ApertureDial />
@@ -114,7 +121,11 @@ export default function About() {
             <br />
             <Words text="Framing stories by night." delay={0.2} />
           </h1>
-          <FadeUp as="p" className="lead" delay={0.3}>{site.about}</FadeUp>
+          {introText && (
+            <FadeUp as="p" className="ab-intro" delay={0.28}>
+              {introText}
+            </FadeUp>
+          )}
         </div>
 
         {isDesktop ? (
@@ -129,6 +140,14 @@ export default function About() {
                 anchor="center"
               />
             </div>
+          </div>
+        )}
+
+        {storyText && (
+          <div className="ab-full">
+            <FadeUp as="p" className="lead" delay={0.34}>
+              {storyText}
+            </FadeUp>
           </div>
         )}
       </section>

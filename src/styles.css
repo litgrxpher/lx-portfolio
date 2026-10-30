@@ -372,23 +372,40 @@ dl.meta dd a { border-bottom: 1px solid var(--ink); margin-right: 10px; }
 }
 .ab { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(280px, 1fr); gap: clamp(24px, 4vw, 56px); align-items: start; min-height: 0; }
 .ab-text { min-width: 0; display: flex; flex-direction: column; }
-.ab-title { font-size: clamp(42px, 6.8vw, 104px); line-height: 0.92; margin-bottom: clamp(20px, 2.5vw, 32px); }
-.ab-text .lead,
+.ab-title { font-size: clamp(40px, 6.2vw, 96px); line-height: 0.94; margin-bottom: clamp(16px, 2.2vw, 26px); }
+.ab-intro {
+  font-family: var(--display);
+  font-weight: 500;
+  font-size: clamp(18px, 1.9vw, 23px);
+  line-height: 1.45;
+  letter-spacing: -0.015em;
+  color: var(--ink);
+  opacity: 0.92;
+  text-wrap: pretty;
+  margin: 0;
+}
+.ab-art { grid-column: 2; grid-row: 1; min-height: clamp(300px, 34vw, 420px); position: relative; }
+.ab-art.about-lanyard-placeholder { pointer-events: none; }
+.ab-full {
+  grid-column: 1 / -1;
+  grid-row: 2;
+  width: 100%;
+  margin-top: clamp(20px, 3vw, 40px);
+}
+.ab-full .lead,
 .lead {
   font-family: var(--display);
   font-weight: 500;
-  font-size: clamp(20px, 2.2vw, 27px);
-  line-height: 1.42;
-  letter-spacing: -0.015em;
+  font-size: clamp(22px, 2.5vw, 34px);
+  line-height: 1.38;
+  letter-spacing: -0.02em;
   text-wrap: pretty;
   width: 100%;
   max-width: 100%;
   margin: 0;
   color: var(--ink);
-  opacity: 0.92;
+  opacity: 0.94;
 }
-.ab-art { grid-column: 2; min-height: clamp(380px, 42vw, 500px); position: relative; }
-.ab-art.about-lanyard-placeholder { pointer-events: none; }
 .about-lanyard-mobile-wrap {
   width: 100%;
   position: relative;
@@ -423,8 +440,9 @@ dl.meta dd a { border-bottom: 1px solid var(--ink); margin-right: 10px; }
 @media (max-width: 820px) {
   .about-lanyard-stage { display: none !important; }
   .ab { grid-template-columns: minmax(0, 1fr); gap: 24px; min-height: 0; }
-  .ab-text { grid-column: 1; }
-  .ab-art { grid-column: 1; min-height: 480px; }
+  .ab-text { grid-column: 1; grid-row: 1; }
+  .ab-art { grid-column: 1; grid-row: 2; min-height: 480px; }
+  .ab-full { grid-column: 1; grid-row: 3; margin-top: 16px; }
 }
 @media (max-width: 640px) {
   .about { padding-right: 18px; padding-left: 18px; }
