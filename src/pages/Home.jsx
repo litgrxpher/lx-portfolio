@@ -15,6 +15,9 @@ import './Home.css'
 gsap.registerPlugin(ScrollTrigger)
 
 const MODEL_URL = '/earth.glb' // put the file in /public
+const SATELLITE_URL = '/satellite.glb'
+const SATELLITE_ORBIT_R = 12.2
+const SATELLITE_SPEED = 0.24
 const MODEL_BYTES = 20361636 // fallback when the server sends no Content-Length
 const TEX_URL = '/earth/' // high-resolution maps live in /public/earth/
 // [key, file, isColour]: these replace the model's built-in 1024px textures
@@ -336,6 +339,90 @@ export default function Home() {
     const stars = new THREE.Points(starGeo, starMat)
     scene.add(stars)
 
+    // ---------- satellite orbit system ----------
+    const satelliteOrbit = new THREE.Group()
+    satelliteOrbit.rotation.x = THREE.MathUtils.degToRad(36)
+    satelliteOrbit.rotation.z = THREE.MathUtils.degToRad(22)
+    rig.add(satelliteOrbit)
+
+    // Subtle glowing orbital trace path
+    const orbitPathGeo = new THREE.BufferGeometry()
+    const orbitPts = []
+    const orbitSegments = 128
+    for (let j = 0; j <= orbitSegments; j++) {
+      const theta = (j / orbitSegments) * Math.PI * 2
+      orbitPts.push(new THREE.Vector3(Math.cos(theta) * SATELLITE_ORBIT_R, 0, Math.sin(theta) * SATELLITE_ORBIT_R))
+    }
+    orbitPathGeo.setFromPoints(orbitPts)
+    const orbitPathMat = new THREE.LineBasicMaterial({
+      color: 0x55aaff,
+      transparent: true,
+      opacity: 0.22,
+      depthWrite: false,
+    })
+    const orbitPath = new THREE.Line(orbitPathGeo, orbitPathMat)
+    satelliteOrbit.add(orbitPath)
+
+    const satelliteHolder = new THREE.Group()
+    satelliteOrbit.add(satelliteHolder)
+
+    // Telemetry strobe beacon LED on satellite
+    const beaconGeo = new THREE.SphereGeometry(0.045, 8, 8)
+    const beaconMat = new THREE.MeshBasicMaterial({
+      color: 0x00ffcc,
+      transparent: true,
+      opacity: 0.9,
+    })
+    const beaconMesh = new THREE.Mesh(beaconGeo, beaconMat)
+    beaconMesh.position.set(0, 0.15, 0)
+    satelliteHolder.add(beaconMesh)
+
+    let satelliteMesh = null
+    const satLoader = new GLTFLoader()
+    satLoader.load(
+      SATELLITE_URL,
+      (satGltf) => {
+        if (disposed) return
+        const sat = satGltf.scene
+
+        sat.traverse((o) => {
+          if (o.isMesh) {
+            o.frustumCulled = false
+            if (o.material) {
+              o.material.side = THREE.DoubleSide
+              // Polish gold and metallic materials under sunlight
+              if (o.material.name?.toLowerCase().includes('gold') || o.material.metalness > 0) {
+                o.material.metalness = Math.min(1, (o.material.metalness || 0.6) * 1.2)
+                o.material.roughness = Math.max(0.15, (o.material.roughness || 0.4) * 0.7)
+              }
+            }
+          }
+        })
+
+        // Center and scale satellite proportionally to Earth
+        const sBox = new THREE.Box3().setFromObject(sat)
+        const sSize = sBox.getSize(new THREE.Vector3())
+        const sCenter = sBox.getCenter(new THREE.Vector3())
+        const maxDim = Math.max(sSize.x, sSize.y, sSize.z)
+        const scale = 1.05 / (maxDim || 1)
+
+        sat.position.copy(sCenter).multiplyScalar(-1)
+
+        const satPivot = new THREE.Group()
+        satPivot.add(sat)
+        satPivot.scale.setScalar(scale)
+
+        // Subtle flight attitude
+        satPivot.rotation.x = THREE.MathUtils.degToRad(14)
+        satPivot.rotation.z = THREE.MathUtils.degToRad(-10)
+
+        satelliteMesh = satPivot
+        satelliteHolder.add(satPivot)
+      },
+      undefined,
+      (err) => console.warn('[Home] satellite model load warning:', err)
+    )
+
     // ---------- camera path ----------
     let path = null // per-key unit directions, built once the model is in
     let loaded = false
@@ -512,6 +599,27 @@ export default function Home() {
       // the cloud layer drifts slowly around the polar axis
       clouds.forEach((c) => c.rotateOnWorldAxis(Y, dt * 0.006))
       stars.rotation.y = time * 0.004
+
+      // revolve satellite model around Earth
+      if (satelliteHolder) {
+        const satAngle = time * SATELLITE_SPEED
+        const sx = Math.cos(satAngle) * SATELLITE_ORBIT_R
+        const sz = Math.sin(satAngle) * SATELLITE_ORBIT_R
+        satelliteHolder.position.set(sx, 0, sz)
+        satelliteHolder.rotation.y = -satAngle + Math.PI / 2
+
+        if (satelliteMesh) {
+          // Slow solar panel attitude roll (catches sun glints)
+          satelliteMesh.rotation.y = Math.sin(time * 0.25) * 0.12
+        }
+
+        // Telemetry beacon pulse
+        if (beaconMat) {
+          const strobe = Math.sin(time * 5.2) > 0.4 ? 1 : 0.12
+          beaconMat.opacity = strobe * 0.95
+          beaconMesh.scale.setScalar(strobe > 0.5 ? 1.35 : 0.8)
+        }
+      }
 
       renderer.render(scene, camera)
     }
