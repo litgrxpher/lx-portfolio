@@ -118,6 +118,8 @@ export default function About() {
                 backImage={aboutImage?.src || '/card-back.png'}
                 strapImage="/band.png"
                 anchor="center"
+                strapLength={0.12}
+                size={0.68}
               />
             </div>
           </div>
@@ -125,7 +127,7 @@ export default function About() {
 
         <h1 className="ab-title">
           <Words text="Querying data by day," />
-          <br />
+          <br className="ab-br" />
           <Words text="Framing stories by night." delay={0.2} />
         </h1>
 
