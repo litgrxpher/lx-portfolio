@@ -446,7 +446,7 @@ dl.meta dd a { border-bottom: 1px solid var(--ink); margin-right: 10px; }
   overflow: hidden;
   border-block: 1px solid var(--line);
   margin: clamp(48px, 8vw, 100px) calc(var(--pad) * -1);
-  padding: clamp(24px, 3.6vw, 42px) 0;
+  padding: clamp(18px, 2.4vw, 26px) 0;
   position: relative;
   pointer-events: none;
   user-select: none;
@@ -858,7 +858,15 @@ video.sr-media { background: #000; }
 .about-toolkit .about-logo-loop {
   margin-top: clamp(20px, 3vw, 36px);
   margin-bottom: 0;
-  border-bottom: none;
+  border-block: 1px solid var(--line);
+  padding: clamp(18px, 2.4vw, 26px) 0;
+}
+
+/* Archives Showcase */
+.about-photography {
+  border-top: none;
+  margin-top: clamp(56px, 7vw, 96px);
+  padding-top: 0;
 }
 
 /* Archives Showcase */
