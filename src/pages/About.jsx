@@ -108,12 +108,13 @@ export default function About() {
 
       {/* Hero: Identity & Story */}
       <section className="ab" aria-label="Introduction">
-        <div className="ab-head">
+        <div className="ab-text">
           <h1 className="ab-title">
             <Words text="Querying data by day," />
             <br />
             <Words text="Framing stories by night." delay={0.2} />
           </h1>
+          <FadeUp as="p" className="lead" delay={0.3}>{site.about}</FadeUp>
         </div>
 
         {isDesktop ? (
@@ -130,10 +131,6 @@ export default function About() {
             </div>
           </div>
         )}
-
-        <div className="ab-body">
-          <FadeUp as="p" className="lead" delay={0.3}>{site.about}</FadeUp>
-        </div>
       </section>
 
       {/* Section 01: Core Toolkit */}
