@@ -7,7 +7,76 @@ import { Words, FadeUp } from '../components/Reveal'
 import SayHello from '../components/SayHello'
 import ApertureDial from '../components/ApertureDial'
 import Lanyard from '../components/Lanyard'
-import CurvedLoop from '../components/CurvedLoop'
+import LogoLoop from '../components/LogoLoop'
+import { SiBlender, SiDavinciresolve, SiFigma, SiLinux } from 'react-icons/si'
+import { TbBrandAdobeAfterEffect, TbBrandAdobePremiere } from 'react-icons/tb'
+import { GrOracle } from 'react-icons/gr'
+
+function AntigravityIcon(props) {
+  return (
+    <svg
+      viewBox="0 0 180 180"
+      width="1em"
+      height="1em"
+      fill="currentColor"
+      aria-hidden="true"
+      {...props}
+    >
+      <path d="M144.248 149.062C151.748 154.688 162.998 150.938 152.685 140.625C121.748 110.625 128.31 28.125 89.8727 28.125C51.4352 28.125 57.9977 110.625 27.0602 140.625C15.8102 151.875 27.9977 154.688 35.4977 149.062C64.5602 129.375 62.6852 94.6875 89.8727 94.6875C117.06 94.6875 115.185 129.375 144.248 149.062Z" />
+    </svg>
+  )
+}
+
+const toolLogos = [
+  {
+    node: <SiBlender />,
+    title: 'Blender',
+    href: 'https://www.blender.org',
+    hoverColor: '#EA7600'
+  },
+  {
+    node: <TbBrandAdobeAfterEffect />,
+    title: 'After Effects',
+    href: 'https://www.adobe.com/products/aftereffects.html',
+    hoverColor: '#9999FF'
+  },
+  {
+    node: <SiDavinciresolve />,
+    title: 'DaVinci Resolve',
+    href: 'https://www.blackmagicdesign.com/products/davinciresolve',
+    hoverColor: '#FF5353'
+  },
+  {
+    node: <TbBrandAdobePremiere />,
+    title: 'Adobe Premiere Pro',
+    href: 'https://www.adobe.com/products/premiere.html',
+    hoverColor: '#EA77FF'
+  },
+  {
+    node: <SiFigma />,
+    title: 'Figma',
+    href: 'https://www.figma.com',
+    hoverColor: '#F24E1E'
+  },
+  {
+    node: <GrOracle />,
+    title: 'Oracle',
+    href: 'https://www.oracle.com',
+    hoverColor: '#F80000'
+  },
+  {
+    node: <SiLinux />,
+    title: 'Linux',
+    href: 'https://www.kernel.org',
+    hoverColor: '#FCC624'
+  },
+  {
+    node: <AntigravityIcon />,
+    title: 'Antigravity',
+    href: 'https://antigravity.google',
+    hoverColor: '#3186FF'
+  }
+]
 
 function Float({ p, className, range }) {
   const ref = useRef(null)
@@ -61,7 +130,6 @@ export default function About() {
     featuredSeries?.items.find(
       (item) => item.file === featuredSeries.cover && item.type === 'image'
     ) || featuredSeries?.items.find((item) => item.type === 'image')
-  const words = ['Design', 'Video', 'Photography', 'Engineering']
 
   return (
     <article className="view about">
@@ -148,24 +216,19 @@ export default function About() {
         </div>
       </section>
 
-      <div className="about-curved-loop">
-        <CurvedLoop
-          marqueeText="Engineering ✦ Design ✦ Video ✦ Photography ✦"
-          shape="arc"
-          speed={2}
-          curveAmount={0}
+      <div className="about-logo-loop">
+        <LogoLoop
+          logos={toolLogos}
+          speed={70}
           direction="left"
-          fontSize={96}
-          fontWeight={700}
-          letterSpacing={0}
-          separator=""
-          outline={false}
-          scrollBoost={0}
-          edgeFade={0}
-          interactive={true}
-          pauseOnHover={false}
-          separatorColor={null}
-          color={null}
+          logoHeight={32}
+          gap={56}
+          hoverSpeed={0}
+          scaleOnHover={false}
+          labels="inline"
+          fadeOut={true}
+          fadeOutWidth={0.12}
+          ariaLabel="Creative and engineering tools"
         />
       </div>
 
